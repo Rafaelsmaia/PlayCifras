@@ -1,0 +1,47 @@
+{
+  "name": "playcifras",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "import:kaggle": "tsx scripts/import-kaggle.ts",
+    "fix:genres": "tsx scripts/fix-genres.ts"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@prisma/client": "^6.16.3",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.0.0",
+    "framer-motion": "^10.16.16",
+    "lucide-react": "^0.294.0",
+    "next": "14.0.4",
+    "next-auth": "^5.0.0-beta.30",
+    "postcss": "^8",
+    "prisma": "^6.16.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "sqlite3": "^5.1.7",
+    "svguitar": "^2.4.1",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5",
+    "vexflow": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "csv-parse": "^6.2.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4",
+    "tsx": "^4.21.0"
+  }
+}
