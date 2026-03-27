@@ -6,6 +6,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -31,7 +32,6 @@
     "prisma": "^6.16.3",
     "react": "^18",
     "react-dom": "^18",
-    "sqlite3": "^5.1.7",
     "svguitar": "^2.4.1",
     "tailwindcss": "^3.3.0",
     "typescript": "^5",

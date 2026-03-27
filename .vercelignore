@@ -1,0 +1,7 @@
+# Evita upload gigante no deploy local (CLI)
+node_modules
+.next
+prisma/dev.db
+data/kaggle-extract
+archive.zip
+*.zip
