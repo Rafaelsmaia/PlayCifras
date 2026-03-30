@@ -24,12 +24,21 @@ interface RankedArtist {
   image?: string | null
 }
 
+function normalizeArtistImage(src?: string | null) {
+  if (!src) return null
+  return src
+    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
+}
+
 function SongThumb({ src, alt }: { src?: string | null; alt: string }) {
-  if (src) {
+  const normalized = normalizeArtistImage(src)
+  if (normalized) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src}
+        src={normalized}
         alt=""
         className="h-12 w-12 shrink-0 rounded-md object-cover"
       />
@@ -187,15 +196,18 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-3 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-7 md:gap-x-3">
               {artists.map((artist) => (
+                (() => {
+                  const imageSrc = normalizeArtistImage(artist.image)
+                  return (
                 <Link
                   key={artist.id}
                   href={`/artista/${artist.slug}`}
                   className="flex flex-col items-center"
                 >
-                  {artist.image ? (
+                  {imageSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={artist.image}
+                      src={imageSrc}
                       alt=""
                       className="mb-2 h-[88px] w-[88px] rounded-full object-cover sm:h-24 sm:w-24"
                     />
@@ -211,6 +223,8 @@ export default function Home() {
                     {artist.name}
                   </span>
                 </Link>
+                  )
+                })()
               ))}
             </div>
           )}

@@ -8,6 +8,14 @@ import type { Metadata } from 'next'
 
 type Props = { params: { slug: string } }
 
+function normalizeArtistImage(src?: string | null) {
+  if (!src) return null
+  return src
+    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const artist = await prisma.artist.findUnique({
     where: { slug: params.slug },
@@ -42,6 +50,8 @@ export default async function ArtistaPage({ params }: Props) {
     notFound()
   }
 
+  const imageSrc = normalizeArtistImage(artist.image)
+
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -58,10 +68,10 @@ export default async function ArtistaPage({ params }: Props) {
           <aside className="lg:col-span-4">
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex justify-center">
-                {artist.image ? (
+                {imageSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={artist.image}
+                    src={imageSrc}
                     alt=""
                     className="h-40 w-40 rounded-full object-cover ring-4 ring-gray-100"
                   />
