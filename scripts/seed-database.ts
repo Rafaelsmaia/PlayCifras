@@ -5,7 +5,6 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...')
 
-  // Criar artistas
   const artists = [
     {
       name: 'Tom Jobim',
@@ -42,7 +41,6 @@ async function main() {
     console.log(`✅ Artista criado: ${artist.name}`)
   }
 
-  // Criar músicas
   const songs = [
     {
       title: 'Garota de Ipanema',
@@ -106,43 +104,7 @@ Dm          Bb
 É a coisa mais linda
 Dm          Bb
 Que eu já vi passar`,
-      tags: ['bossa-nova', 'samba', 'classica', 'violao'],
-      chords: [
-        {
-          name: 'F',
-          frets: [1, 1, 2, 2, 1, 1],
-          fingering: [1, 1, 2, 2, 1, 1],
-          barre: true,
-          barreFret: 1,
-          openStrings: [false, false, false, false, false, false],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'C7',
-          frets: [0, 1, 0, 2, 1, 0],
-          fingering: [0, 1, 0, 2, 1, 0],
-          barre: false,
-          openStrings: [true, false, true, false, false, true],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'Dm',
-          frets: [1, 3, 2, 0, 1, 1],
-          fingering: [1, 3, 2, 0, 1, 1],
-          barre: false,
-          openStrings: [false, false, false, true, false, false],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'Bb',
-          frets: [1, 1, 3, 3, 3, 1],
-          fingering: [1, 1, 2, 3, 4, 1],
-          barre: true,
-          barreFret: 1,
-          openStrings: [false, false, false, false, false, false],
-          mutedStrings: [false, false, false, false, false, false]
-        }
-      ]
+      tags: ['bossa-nova', 'samba', 'classica', 'violao']
     },
     {
       title: 'Trem das Onze',
@@ -192,42 +154,7 @@ C              G
 Mas o trem das onze
 Am             F
 Não pode esperar`,
-      tags: ['samba', 'classica', 'violao', 'tradicional'],
-      chords: [
-        {
-          name: 'C',
-          frets: [0, 1, 0, 2, 1, 0],
-          fingering: [0, 1, 0, 2, 1, 0],
-          barre: false,
-          openStrings: [true, false, true, false, false, true],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'G',
-          frets: [3, 0, 0, 0, 2, 3],
-          fingering: [3, 0, 0, 0, 2, 3],
-          barre: false,
-          openStrings: [false, true, true, true, false, false],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'Am',
-          frets: [0, 0, 2, 2, 1, 0],
-          fingering: [0, 0, 2, 2, 1, 0],
-          barre: false,
-          openStrings: [true, true, false, false, false, true],
-          mutedStrings: [false, false, false, false, false, false]
-        },
-        {
-          name: 'F',
-          frets: [1, 1, 2, 2, 1, 1],
-          fingering: [1, 1, 2, 2, 1, 1],
-          barre: true,
-          barreFret: 1,
-          openStrings: [false, false, false, false, false, false],
-          mutedStrings: [false, false, false, false, false, false]
-        }
-      ]
+      tags: ['samba', 'classica', 'violao', 'tradicional']
     }
   ]
 
@@ -246,18 +173,7 @@ Não pode esperar`,
           tempo: songData.tempo,
           difficulty: songData.difficulty,
           content: songData.content,
-          tags: JSON.stringify(songData.tags),
-          chords: {
-            create: songData.chords.map(chord => ({
-              name: chord.name,
-              frets: JSON.stringify(chord.frets),
-              fingering: JSON.stringify(chord.fingering),
-              barre: chord.barre,
-              barreFret: chord.barreFret,
-              openStrings: JSON.stringify(chord.openStrings),
-              mutedStrings: JSON.stringify(chord.mutedStrings)
-            }))
-          }
+          tags: JSON.stringify(songData.tags)
         }
       })
       console.log(`✅ Música criada: ${song.title}`)

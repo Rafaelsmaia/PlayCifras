@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/search/suggestions?q=
- * Retorna até 5 artistas e 5 músicas mais relevantes (SQLite: INSTR + normalização sem acentos).
- * Em PostgreSQL seria possível usar contains + mode: 'insensitive'; aqui a busca ignora acentos via camada comum.
+ * Retorna até 5 artistas e 5 músicas (strpos + normalização sem acentos, compatível com PostgreSQL).
  */
 export async function GET(request: NextRequest) {
   try {

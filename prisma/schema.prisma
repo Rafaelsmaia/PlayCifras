@@ -81,6 +81,22 @@ model Chord {
   @@map("chords")
 }
 
+/** Posições padrão de acordes (violão/guitarra) — um registo por nome + instrumento. */
+model ChordDictionary {
+  id          String   @id @default(cuid())
+  name        String
+  instrument  String   @default("guitar")
+  frets       String
+  fingering   String
+  barre       Boolean  @default(false)
+  barreFret   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, instrument])
+  @@map("chord_dictionary")
+}
+
 // NextAuth + dados do app (favoritos)
 model User {
   id            String    @id @default(cuid())

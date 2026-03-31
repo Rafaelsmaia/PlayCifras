@@ -1,28 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database'
+import { chordDiagramsForChordNames } from '@/lib/chord-dictionary-batch'
+import { extractUniqueChords } from '@/lib/chord-markup'
+import { resolveDynamicParams } from '@/lib/route-params'
 
 // GET /api/songs/[slug] - Buscar cifra específica
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: { slug: string } | Promise<{ slug: string }> }
 ) {
   try {
+    const { slug: rawSlug } = await resolveDynamicParams(context.params)
+    const slug = decodeURIComponent(rawSlug)
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[api/songs/[slug]] GET slug:', slug)
+    }
+
     const song = await prisma.song.findUnique({
-      where: { slug: params.slug },
+      where: { slug },
       include: {
-        artist: true,
-        chords: true
+        artist: true
       }
     })
 
     if (!song) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[api/songs/[slug]] song not found for slug:', slug)
+      }
       return NextResponse.json(
         { error: 'Song not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(song)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[api/songs/[slug]] song:', song.id, song.title)
+    }
+
+    type Dict = Awaited<ReturnType<typeof chordDiagramsForChordNames>>
+    let chordDictionary: Dict = {}
+    try {
+      const chordNames = extractUniqueChords(song.content)
+      chordDictionary = await chordDiagramsForChordNames(chordNames, 'guitar')
+    } catch (dictErr) {
+      console.error('[api/songs/[slug]] chord dictionary skipped (música ainda devolvida):', dictErr)
+    }
+
+    return NextResponse.json({ ...song, chordDictionary })
   } catch (error) {
     console.error('Error fetching song:', error)
     return NextResponse.json(
@@ -35,9 +60,10 @@ export async function GET(
 // PUT /api/songs/[slug] - Atualizar cifra
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: { slug: string } | Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await resolveDynamicParams(context.params)
     const body = await request.json()
     const {
       title,
@@ -50,7 +76,7 @@ export async function PUT(
     } = body
 
     const song = await prisma.song.update({
-      where: { slug: params.slug },
+      where: { slug },
       data: {
         title,
         key,
@@ -100,11 +126,12 @@ export async function PUT(
 // DELETE /api/songs/[slug] - Deletar cifra
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: { slug: string } | Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await resolveDynamicParams(context.params)
     await prisma.song.delete({
-      where: { slug: params.slug }
+      where: { slug }
     })
 
     return NextResponse.json({ message: 'Song deleted successfully' })

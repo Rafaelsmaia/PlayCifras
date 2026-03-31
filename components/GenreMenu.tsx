@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
+import useSWR from 'swr'
+import { homeRankingFetcher } from '@/lib/home-ranking-fetcher'
+import { HOME_RANKING_SONGS_KEY } from '@/lib/home-ranking-keys'
 
 const MAIN: { slug: string; label: string }[] = [
   { slug: 'todos', label: 'Todos' },
@@ -22,9 +25,18 @@ const MORE: { slug: string; label: string }[] = [
 interface GenreMenuProps {
   value: string
   onChange: (slug: string) => void
+  /** Margem inferior; por defeito `mb-8`. */
+  className?: string
 }
 
-export default function GenreMenu({ value, onChange }: GenreMenuProps) {
+export default function GenreMenu({ value, onChange, className }: GenreMenuProps) {
+  /** Partilha cache SWR com a Home (mesma chave = um único fetch). */
+  useSWR(HOME_RANKING_SONGS_KEY, homeRankingFetcher, {
+    revalidateOnMount: false,
+    dedupingInterval: 60_000,
+    revalidateOnFocus: false
+  })
+
   const [moreOpen, setMoreOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -51,7 +63,7 @@ export default function GenreMenu({ value, onChange }: GenreMenuProps) {
   }
 
   return (
-    <div className="mb-8 -mx-1 px-1">
+    <div className={clsx('-mx-1 px-1', className ?? 'mb-8')}>
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin sm:flex-wrap sm:overflow-visible">
         {MAIN.map((g) => (
           <button

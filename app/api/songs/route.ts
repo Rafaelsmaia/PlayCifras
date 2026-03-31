@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const tags = searchParams.get('tags') || ''
     // Sem parâmetro ou "todos" => songWhereForGenre retorna null (não filtra por gênero)
     const genre = (searchParams.get('genre') || '').trim()
+    /** Lista / ranking: sem acordes para respostas mais leves (ex.: home com pool grande). */
+    const minimal = searchParams.get('minimal') === '1'
 
     const skip = (page - 1) * limit
 
@@ -56,11 +58,13 @@ export async function GET(request: NextRequest) {
     const [songs, total] = await Promise.all([
       prisma.song.findMany({
         where,
-        include: {
-          artist: true,
-          chords: true,
-          genre: true
-        },
+        include: minimal
+          ? { artist: true, genre: true }
+          : {
+              artist: true,
+              chords: true,
+              genre: true
+            },
         orderBy: [{ views: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: limit

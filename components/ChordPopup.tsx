@@ -16,6 +16,8 @@ export interface ChordPopupDiagramData {
 interface ChordPopupProps {
   chordName: string
   chordData?: ChordPopupDiagramData
+  /** Ver ProfessionalChordDiagram — evita verde de fallback antes do dicionário carregar. */
+  dictionaryReady?: boolean
   isVisible: boolean
   position: { x: number; y: number }
 }
@@ -23,6 +25,7 @@ interface ChordPopupProps {
 export default function ChordPopup({
   chordName,
   chordData,
+  dictionaryReady = true,
   isVisible,
   position
 }: ChordPopupProps) {
@@ -71,15 +74,20 @@ export default function ChordPopup({
         border: '2px solid #00a651',
         borderRadius: '8px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        padding: '10px',
+        padding: '6px 8px',
         pointerEvents: 'none',
         left: popupPosition.x,
         top: popupPosition.y,
-        width: 132,
-        maxWidth: 'min(132px, calc(100vw - 32px))'
+        boxSizing: 'border-box',
+        width: 'fit-content',
+        maxWidth: 'min(calc(100vw - 32px), 220px)'
       }}
     >
-      <ProfessionalChordDiagram chordName={chordName} chordData={chordData} />
+      <ProfessionalChordDiagram
+        chordName={chordName}
+        chordData={chordData}
+        dictionaryReady={dictionaryReady}
+      />
     </div>
   )
 }

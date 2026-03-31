@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client'
 
 /** Palavras extra para casar no JSON `tags` (legado / importações sem genreId). */
-const TAG_KEYWORDS: Record<string, string[]> = {
+export const GENRE_TAG_KEYWORDS: Record<string, string[]> = {
   rock: ['rock', 'metal', 'grunge', 'punk', 'hard rock', 'alternative', 'indie rock'],
   sertanejo: ['sertanejo', 'sertaneja', 'country'],
   gospel: ['gospel', 'religious', 'christian', 'worship', 'louvor'],
@@ -23,7 +23,7 @@ export function songWhereForGenre(
   const slug = raw || 'todos'
   if (slug === 'todos') return null
 
-  const keywords = TAG_KEYWORDS[slug]
+  const keywords = GENRE_TAG_KEYWORDS[slug]
   const or: Prisma.SongWhereInput[] = [{ genre: { slug } }]
 
   if (keywords?.length) {

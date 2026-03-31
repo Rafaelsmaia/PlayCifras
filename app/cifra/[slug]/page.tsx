@@ -1,10 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { ArrowLeft, Heart, Share, Download } from 'lucide-react'
 import Link from 'next/link'
+import { useParams, usePathname } from 'next/navigation'
 import ChordPopup, { type ChordPopupDiagramData } from '@/components/ChordPopup'
 import ProfessionalChordDiagram from '@/components/ProfessionalChordDiagram'
+import {
+  CifraToolbar,
+  CifraSongHeader,
+  CifraVideoPlaceholder,
+  CHORD_PURPLE,
+  CHORD_NAME_ONLY_GREEN
+} from '@/components/cifra/CifraPageLayout'
 import { extractUniqueChords, parseLineSegments } from '@/lib/chord-markup'
 
 interface Song {
@@ -18,57 +25,81 @@ interface Song {
   views: number
   likes: number
   createdAt: string
+  /** Diagramas do dicionário global (vindos de GET /api/songs/[slug]). */
+  chordDictionary?: Record<string, ChordPopupDiagramData>
   artist: {
     name: string
     slug: string
-  }
-  chords: Array<{
-    id: string
-    name: string
-    frets: string
-    fingering: string
-    barre: boolean
-    barreFret?: number
-    openStrings: string
-    mutedStrings: string
-  }>
-}
-
-function toDiagramData(
-  chordName: string,
-  available: Song['chords']
-): ChordPopupDiagramData | undefined {
-  const chordData = available.find((c) => c.name === chordName)
-  if (!chordData) return undefined
-  return {
-    frets: JSON.parse(chordData.frets) as number[],
-    fingering: JSON.parse(chordData.fingering) as number[],
-    barres: chordData.barre
-      ? [
-          {
-            fromString: 1,
-            toString: 6,
-            fret: chordData.barreFret || 1
-          }
-        ]
-      : []
+    image?: string | null
   }
 }
 
-export default function CifraPage({ params }: { params: { slug: string } }) {
+function normalizeArtistImage(src?: string | null) {
+  if (!src) return null
+  return src
+    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
+}
+
+function slugFromParams(raw: string | string[] | undefined): string {
+  if (raw == null) return ''
+  return Array.isArray(raw) ? raw[0] ?? '' : raw
+}
+
+function safeDecodePathSegment(s: string): string {
+  try {
+    return decodeURIComponent(s)
+  } catch {
+    return s
+  }
+}
+
+export default function CifraPage() {
+  const routeParams = useParams()
+  const pathname = usePathname()
+  const slugFromPath =
+    pathname && pathname.startsWith('/cifra')
+      ? safeDecodePathSegment(
+          pathname.replace(/^\/cifra\//, '').split('/').filter(Boolean)[0] ?? ''
+        )
+      : ''
+  const slug =
+    slugFromParams(routeParams?.slug as string | string[] | undefined) || slugFromPath
+
   const [song, setSong] = useState<Song | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedChord, setSelectedChord] = useState<string | null>(null)
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
   const [showPopup, setShowPopup] = useState(false)
+  const [dictionaryChords, setDictionaryChords] = useState<
+    Record<string, ChordPopupDiagramData> | null
+  >(null)
 
   useEffect(() => {
+    if (!slug) return
+
+    setLoading(true)
+    setSong(null)
+    setDictionaryChords(null)
+
     const fetchSong = async () => {
       try {
-        const response = await fetch(`/api/songs/${params.slug}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[cifra/page] slug (fetch):', slug)
+        }
+        const response = await fetch(`/api/songs/${encodeURIComponent(slug)}`)
         if (response.ok) {
-          const data = await response.json()
+          const data = (await response.json()) as Song
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[cifra/page] song carregada:', data?.id, data?.title, 'chordDictionary keys:', data?.chordDictionary ? Object.keys(data.chordDictionary).length : 0)
+          }
           setSong(data)
+          setDictionaryChords(data.chordDictionary ?? {})
+        } else {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[cifra/page] API não OK:', response.status, slug)
+          }
         }
       } catch (error) {
         console.error('Error fetching song:', error)
@@ -77,8 +108,8 @@ export default function CifraPage({ params }: { params: { slug: string } }) {
       }
     }
 
-    fetchSong()
-  }, [params.slug])
+    void fetchSong()
+  }, [slug])
 
   useEffect(() => {
     if (!song?.id) return
@@ -96,6 +127,21 @@ export default function CifraPage({ params }: { params: { slug: string } }) {
     void registerView()
   }, [song?.id])
 
+  const chordDiagramMap = useMemo(() => {
+    const m = new Map<string, ChordPopupDiagramData | undefined>()
+    if (!song) return m
+    const dict = dictionaryChords ?? {}
+    for (const chordName of extractUniqueChords(song.content)) {
+      m.set(chordName, dict[chordName])
+    }
+    return m
+  }, [song, dictionaryChords])
+
+  const resolveChordDiagram = useCallback(
+    (chordName: string) => chordDiagramMap.get(chordName),
+    [chordDiagramMap]
+  )
+
   const handleChordPointer = useCallback((chordName: string, event: React.MouseEvent) => {
     setSelectedChord(chordName)
     setPopupPosition({ x: event.clientX, y: event.clientY })
@@ -108,34 +154,37 @@ export default function CifraPage({ params }: { params: { slug: string } }) {
   }, [])
 
   const popupDiagramData = useMemo(() => {
-    if (!song || !selectedChord) return undefined
-    return toDiagramData(selectedChord, song.chords || [])
-  }, [song, selectedChord])
+    if (!selectedChord) return undefined
+    return resolveChordDiagram(selectedChord)
+  }, [selectedChord, resolveChordDiagram])
+
+  const handlePrint = useCallback(() => {
+    window.print()
+  }, [])
+
+  if (!slug) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="py-16 text-center text-gray-600">Carregando cifra...</div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <div style={{ fontSize: '18px', color: '#666' }}>Carregando cifra...</div>
-        </div>
+      <div className="min-h-screen bg-white">
+        <div className="py-16 text-center text-gray-600">Carregando cifra...</div>
       </div>
     )
   }
 
   if (!song) {
     return (
-      <div style={{ backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <div style={{ fontSize: '18px', color: '#666' }}>Cifra não encontrada</div>
-          <Link
-            href="/"
-            style={{
-              color: '#00a651',
-              textDecoration: 'none',
-              marginTop: '16px',
-              display: 'inline-block'
-            }}
-          >
+      <div className="min-h-screen bg-white">
+        <div className="py-16 text-center text-gray-600">
+          Cifra não encontrada
+          <br />
+          <Link href="/" className="mt-4 inline-block text-cifra-green">
             ← Voltar ao início
           </Link>
         </div>
@@ -144,190 +193,84 @@ export default function CifraPage({ params }: { params: { slug: string } }) {
   }
 
   const chordsInContent = extractUniqueChords(song.content)
-  const availableChords = song.chords || []
   const contentLines = song.content.split('\n')
+  const artistImg = normalizeArtistImage(song.artist.image)
 
   return (
-    <div style={{ backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
-      <header className="header">
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              height: '64px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Link
-                href="/"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  textDecoration: 'none',
-                  color: 'inherit'
-                }}
-              >
-                <ArrowLeft style={{ height: '20px', width: '20px' }} />
-                <span style={{ fontSize: '16px' }}>Voltar</span>
-              </Link>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button
-                type="button"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Heart style={{ height: '16px', width: '16px' }} />
-                {song.likes}
-              </button>
-              <button
-                type="button"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Share style={{ height: '16px', width: '16px' }} />
-                Compartilhar
-              </button>
-              <button
-                type="button"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Download style={{ height: '16px', width: '16px' }} />
-                PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white print:bg-white">
+      <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-5 lg:px-8">
+        <CifraSongHeader
+          title={song.title}
+          artistName={song.artist.name}
+          artistSlug={song.artist.slug}
+          artistImage={artistImg}
+          views={song.views}
+          likes={song.likes}
+        />
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '32px' }}>
-          <div className="card">
-            <div style={{ marginBottom: '24px' }}>
-              <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-                {song.title}
-              </h1>
-              <p style={{ fontSize: '18px', color: '#666', marginBottom: '16px' }}>
-                {song.artist.name}
+        <div className="mt-6 flex flex-col gap-8 lg:mt-8 lg:flex-row lg:items-start lg:gap-10">
+          <aside className="shrink-0 print:hidden lg:w-14 lg:self-start">
+            <CifraToolbar onPrint={handlePrint} />
+          </aside>
+
+          <section className="min-w-0 flex-1 py-1 lg:py-0">
+            {song.key && (
+              <p
+                className="mb-3 text-base font-bold sm:text-lg"
+                style={{ color: CHORD_PURPLE }}
+              >
+                Tom: {song.key}
               </p>
+            )}
 
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  marginBottom: '24px',
-                  flexWrap: 'wrap'
-                }}
-              >
-                {song.key && (
-                  <span
-                    style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#e3f2fd',
-                      color: '#1976d2',
-                      borderRadius: '16px',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                  >
-                    Tom: {song.key}
-                  </span>
-                )}
+            {(song.tempo || song.difficulty) && (
+              <div className="mb-4 flex flex-wrap gap-2">
                 {song.tempo && (
-                  <span
-                    style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#f3e5f5',
-                      color: '#7b1fa2',
-                      borderRadius: '16px',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                  >
+                  <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-800">
                     {song.tempo} BPM
                   </span>
                 )}
                 {song.difficulty && (
-                  <span
-                    style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#e8f5e8',
-                      color: '#2e7d32',
-                      borderRadius: '16px',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                  >
+                  <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
                     {song.difficulty}
                   </span>
                 )}
               </div>
-            </div>
+            )}
 
             <div
-              className="cifra-content"
+              className="cifra-content text-[15px] leading-[1.35] text-gray-800"
               style={{
                 fontFamily: "'Roboto Mono', 'Courier New', monospace",
-                lineHeight: 1.35,
                 wordBreak: 'break-word',
-                fontSize: 15,
-                color: '#333',
                 tabSize: 4
               }}
             >
               {contentLines.map((line, lineIndex) => (
                 <div
                   key={lineIndex}
-                  style={{ whiteSpace: 'pre', lineHeight: 1.35, minHeight: '1.35em' }}
+                  className="min-h-[1.35em] whitespace-pre"
+                  style={{ lineHeight: 1.35 }}
                 >
                   {line === '' ? (
                     <span aria-hidden="true">{'\u00A0'}</span>
                   ) : (
                     parseLineSegments(line).map((seg, segIndex) => {
                       if (seg.type === 'text') {
-                        return (
-                          <span key={`${lineIndex}-${segIndex}`}>{seg.value}</span>
-                        )
+                        return <span key={`${lineIndex}-${segIndex}`}>{seg.value}</span>
                       }
                       const chordName = seg.value
+                      const diagram = chordDiagramMap.get(chordName)
+                      const dictReady = dictionaryChords !== null
+                      const hasDiagram = !!diagram
+                      const chordColor =
+                        !dictReady || hasDiagram ? CHORD_PURPLE : CHORD_NAME_ONLY_GREEN
                       return (
                         <span
                           key={`${lineIndex}-${segIndex}`}
-                          className="chord"
+                          className="cursor-pointer px-px font-bold"
                           style={{
-                            color: '#00a651',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            padding: '0 1px'
+                            color: chordColor
                           }}
                           onMouseEnter={(e) => handleChordPointer(chordName, e)}
                           onMouseMove={(e) => handleChordPointer(chordName, e)}
@@ -341,69 +284,56 @@ export default function CifraPage({ params }: { params: { slug: string } }) {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="card">
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>
-              Acordes
-            </h3>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '12px'
-              }}
-            >
-              {chordsInContent.map((chordName) => {
-                const chordData = availableChords.find((c) => c.name === chordName)
-                return (
-                  <div
-                    key={chordName}
-                    style={{
-                      padding: '12px',
-                      border:
-                        selectedChord === chordName ? '2px solid #00a651' : '1px solid #ddd',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      backgroundColor:
-                        selectedChord === chordName ? '#f0f9ff' : 'white',
-                      transition: 'all 0.2s'
-                    }}
-                    onClick={() =>
-                      setSelectedChord(selectedChord === chordName ? null : chordName)
-                    }
-                  >
-                    <ProfessionalChordDiagram
-                      chordName={chordName}
-                      chordData={
-                        chordData
-                          ? {
-                              frets: JSON.parse(chordData.frets) as number[],
-                              fingering: JSON.parse(chordData.fingering) as number[],
-                              barres: chordData.barre
-                                ? [
-                                    {
-                                      fromString: 1,
-                                      toString: 6,
-                                      fret: chordData.barreFret || 1
-                                    }
-                                  ]
-                                : []
-                            }
-                          : undefined
-                      }
-                    />
-                  </div>
-                )
-              })}
+          <aside className="w-full shrink-0 print:hidden lg:w-[300px] xl:w-[320px]">
+            <div className="print:hidden">
+              <CifraVideoPlaceholder posterUrl={artistImg} />
             </div>
-          </div>
+
+            <div className="mt-8 lg:mt-10">
+              <h3 className="mb-3 text-base font-bold text-gray-900">Acordes</h3>
+              <div className="grid max-h-[min(60vh,520px)] grid-cols-2 gap-2 overflow-y-auto overflow-x-hidden sm:gap-3">
+                {chordsInContent.map((chordName) => {
+                  const chordData = chordDiagramMap.get(chordName)
+                  return (
+                    <div
+                      key={chordName}
+                      role="button"
+                      tabIndex={0}
+                      className={`cursor-pointer rounded-md border border-gray-100 p-2 transition sm:p-3 ${
+                        selectedChord === chordName
+                          ? 'border-violet-500 bg-violet-50/50'
+                          : 'hover:border-gray-200'
+                      }`}
+                      onClick={() =>
+                        setSelectedChord(selectedChord === chordName ? null : chordName)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedChord(selectedChord === chordName ? null : chordName)
+                        }
+                      }}
+                    >
+                      <ProfessionalChordDiagram
+                        chordName={chordName}
+                        chordData={chordData}
+                        dictionaryReady={dictionaryChords !== null}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
 
       <ChordPopup
         chordName={selectedChord ?? ''}
         chordData={popupDiagramData}
+        dictionaryReady={dictionaryChords !== null}
         isVisible={showPopup && !!selectedChord}
         position={popupPosition}
       />

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Music, User } from 'lucide-react'
 
 type SuggestionArtist = {
   id: string
@@ -16,7 +16,15 @@ type SuggestionSong = {
   id: string
   title: string
   slug: string
-  artist: { name: string; slug: string }
+  artist: { name: string; slug: string; image?: string | null }
+}
+
+function normalizeArtistImage(src?: string | null) {
+  if (!src) return null
+  return src
+    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
+    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
 }
 
 export default function SearchBar() {
@@ -138,17 +146,37 @@ export default function SearchBar() {
                     Artistas
                   </p>
                   <ul className="space-y-0.5">
-                    {artists.map((a) => (
-                      <li key={a.id}>
-                        <Link
-                          href={`/artista/${a.slug}`}
-                          className="block px-3 py-2 text-sm text-gray-900 hover:bg-gray-50"
-                          onClick={() => setOpen(false)}
-                        >
-                          {a.name}
-                        </Link>
-                      </li>
-                    ))}
+                    {artists.map((a) => {
+                      const img = normalizeArtistImage(a.image)
+                      return (
+                        <li key={a.id}>
+                          <Link
+                            href={`/artista/${a.slug}`}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                            onClick={() => setOpen(false)}
+                          >
+                            {img ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={img}
+                                alt=""
+                                className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                                <User className="h-5 w-5" aria-hidden />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-gray-900">
+                                {a.name}
+                              </span>
+                              <span className="block truncate text-xs text-gray-500">Artista</span>
+                            </span>
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               )}
@@ -158,22 +186,39 @@ export default function SearchBar() {
                     Músicas
                   </p>
                   <ul className="space-y-0.5">
-                    {songs.map((s) => (
-                      <li key={s.id}>
-                        <Link
-                          href={`/cifra/${s.slug}`}
-                          className="block px-3 py-2 hover:bg-gray-50"
-                          onClick={() => setOpen(false)}
-                        >
-                          <span className="block truncate text-sm font-medium text-gray-900">
-                            {s.title}
-                          </span>
-                          <span className="block truncate text-xs text-gray-500">
-                            {s.artist.name}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
+                    {songs.map((s) => {
+                      const img = normalizeArtistImage(s.artist.image)
+                      return (
+                        <li key={s.id}>
+                          <Link
+                            href={`/cifra/${s.slug}`}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                            onClick={() => setOpen(false)}
+                          >
+                            {img ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={img}
+                                alt=""
+                                className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cifra-green/10 text-cifra-green">
+                                <Music className="h-5 w-5" aria-hidden />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-gray-900">
+                                {s.title}
+                              </span>
+                              <span className="block truncate text-xs text-gray-500">
+                                Música · {s.artist.name}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               )}
