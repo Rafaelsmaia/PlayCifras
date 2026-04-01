@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { Menu, User, Heart, Music, LogOut, CircleUser } from 'lucide-react'
+import { Menu, User, Heart, LogOut, CircleUser } from 'lucide-react'
 import SearchBar from '@/components/SearchBar'
 
 export default function Header() {
@@ -26,11 +26,21 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <Music className="h-8 w-8 text-cifra-green" />
-              <span className="text-2xl font-bold text-cifra-green">PlayCifras</span>
+            <Link
+              href="/"
+              className="relative flex h-12 w-[min(260px,52vw)] shrink-0 items-center overflow-hidden sm:h-14 sm:w-[300px]"
+              aria-label="PlayCifras — início"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/logo-extensa.png"
+                alt="PlayCifras"
+                className="h-[4.75rem] w-auto max-w-none origin-left scale-[1.55] object-contain object-left sm:h-[5.25rem] sm:scale-[1.65]"
+                width={640}
+                height={144}
+              />
             </Link>
           </div>
 

@@ -9,6 +9,7 @@ import {
   ArtistsRowSkeleton,
   SongsGridSkeleton
 } from '@/components/home/HomeSkeletons'
+import ShortsCarousel from '@/components/home/ShortsCarousel'
 
 interface RankedSong {
   id: string
@@ -203,6 +204,8 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        <ShortsCarousel />
       </main>
     </div>
   )

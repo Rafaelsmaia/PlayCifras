@@ -1,6 +1,11 @@
 'use client'
 
 import {
+  CHORDPIC_BASE_FRET_FONT_SIZE,
+  CHORDPIC_BASE_FRET_LABEL_X,
+  CHORDPIC_CHORD_TITLE_FONT_SIZE,
+  CHORDPIC_CHORD_TITLE_TSPAN_DY,
+  CHORDPIC_FINGER_FONT_SIZE,
   CHORDPIC_FINGER_R,
   CHORDPIC_FRET_LINES,
   CHORDPIC_NUT_Y,
@@ -11,8 +16,8 @@ import {
   CHORDPIC_STATUS_GRAY,
   CHORDPIC_STATUS_ROW_R,
   CHORDPIC_STATUS_ROW_Y,
-  CHORDPIC_VIEWBOX,
   chordpicDisplayWidthPx,
+  chordpicViewBox,
   chordpicFretCenterY
 } from '@/lib/chordpic-geometry'
 
@@ -34,7 +39,7 @@ interface ChordpicDiagramProps {
 
 /** X cinza na fileira inferior (corda não tocada). */
 function statusMuteX(cx: number, cy: number) {
-  const d = 10
+  const d = 11
   return (
     <g>
       <line
@@ -139,18 +144,20 @@ export default function ChordpicDiagram({
   /** Primeira corda tocada da esquerda (6ª → 1ª): indica o baixo. */
   const bassCol = relFrets.findIndex((rf) => rf >= 0)
 
-  const dw = chordpicDisplayWidthPx(CHORDPIC_DISPLAY_H)
+  const vb = chordpicViewBox(baseFret)
+  const dw = chordpicDisplayWidthPx(CHORDPIC_DISPLAY_H, vb.w)
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={dw}
       height={CHORDPIC_DISPLAY_H}
-      viewBox={`${CHORDPIC_VIEWBOX.x} 0 ${CHORDPIC_VIEWBOX.w} ${CHORDPIC_VIEWBOX.h}`}
+      viewBox={`${vb.x} 0 ${vb.w} ${vb.h}`}
       preserveAspectRatio="xMidYMid meet"
-      className="block h-auto max-h-[140px] w-full min-w-[72px] max-w-[200px] shrink-0"
+      className="mx-auto block h-auto min-w-[72px] max-w-[280px] shrink-0"
       style={{
-        aspectRatio: `${CHORDPIC_VIEWBOX.w} / ${CHORDPIC_VIEWBOX.h}`
+        aspectRatio: `${vb.w} / ${vb.h}`,
+        maxHeight: CHORDPIC_DISPLAY_H
       }}
     >
       <rect width="100%" height="100%" fill="#fff" />
@@ -158,26 +165,15 @@ export default function ChordpicDiagram({
         x={200}
         y={0}
         fontFamily='Arial, "Helvetica Neue", Helvetica, sans-serif'
-        fontSize={37}
+        fontSize={CHORDPIC_CHORD_TITLE_FONT_SIZE}
+        fontWeight={700}
         textAnchor="middle"
         fill="#000"
       >
-        <tspan dy={48.1} x={200}>
+        <tspan dy={CHORDPIC_CHORD_TITLE_TSPAN_DY} x={200}>
           {chordName}
         </tspan>
       </text>
-
-      {baseFret > 1 && (
-        <text
-          x={68}
-          y={CHORDPIC_NUT_Y + 12}
-          fontSize={18}
-          fill="#000"
-          fontFamily='Arial, "Helvetica Neue", Helvetica, sans-serif'
-        >
-          {baseFret}fr
-        </text>
-      )}
 
       <line
         x1={77.75}
@@ -214,10 +210,10 @@ export default function ChordpicDiagram({
         <rect
           key={`barre-${i}`}
           x={r.x1}
-          y={r.cy - 8}
+          y={r.cy - 9}
           width={r.x2 - r.x1}
-          height={16}
-          rx={4}
+          height={18}
+          rx={4.5}
           fill="#000"
         />
       ))}
@@ -237,7 +233,7 @@ export default function ChordpicDiagram({
                 x={cx}
                 y={cy}
                 fontFamily='Arial, "Helvetica Neue", Helvetica, sans-serif'
-                fontSize={14}
+                fontSize={CHORDPIC_FINGER_FONT_SIZE}
                 textAnchor="middle"
                 dominantBaseline="central"
                 fill="#fff"
@@ -248,6 +244,26 @@ export default function ChordpicDiagram({
           </g>
         )
       })}
+
+      {baseFret > 1 && (
+        <text
+          x={CHORDPIC_BASE_FRET_LABEL_X}
+          y={chordpicFretCenterY(1) ?? CHORDPIC_NUT_Y + 38}
+          fontSize={CHORDPIC_BASE_FRET_FONT_SIZE}
+          fill="#000"
+          fontFamily='Arial, "Helvetica Neue", Helvetica, sans-serif'
+          textAnchor="end"
+          dominantBaseline="central"
+        >
+          <tspan>{baseFret}</tspan>
+          <tspan
+            fontSize={CHORDPIC_BASE_FRET_FONT_SIZE * 0.62}
+            baselineShift="super"
+          >
+            ª
+          </tspan>
+        </text>
+      )}
 
       {relFrets.map((rf, col) => {
         const cx = CHORDPIC_STRING_X[col]

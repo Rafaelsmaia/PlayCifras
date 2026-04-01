@@ -54,7 +54,7 @@ export default function ProfessionalChordDiagram({
   )
 
   return (
-    <div className="mx-auto w-full max-w-[200px] text-center">
+    <div className="mx-auto w-fit max-w-[280px] text-center">
       <ChordpicDiagram
         chordName={chordName}
         relFrets={rc.frets}

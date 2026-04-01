@@ -45,6 +45,15 @@ a {
   background: #a8a8a8;
 }
 
+/* Carrossel horizontal: esconde a barra nativa (mantém scroll por toque/setas/dots) */
+.hide-scrollbar-x {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar-x::-webkit-scrollbar {
+  display: none;
+}
+
 /* Estilos para cifras */
 .cifra-content {
   font-family: 'Courier New', monospace;

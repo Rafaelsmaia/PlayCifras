@@ -74,13 +74,13 @@ export default function ChordPopup({
         border: '2px solid #00a651',
         borderRadius: '8px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        padding: '6px 8px',
+        padding: '4px 6px',
         pointerEvents: 'none',
         left: popupPosition.x,
         top: popupPosition.y,
         boxSizing: 'border-box',
         width: 'fit-content',
-        maxWidth: 'min(calc(100vw - 32px), 220px)'
+        maxWidth: 'min(calc(100vw - 32px), 280px)'
       }}
     >
       <ProfessionalChordDiagram
