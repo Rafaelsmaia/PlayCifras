@@ -28,7 +28,7 @@ export default function SongCard({ song }: SongCardProps) {
   const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
       case 'Fácil':
-        return 'bg-green-100 text-green-800'
+        return 'bg-violet-100 text-violet-800'
       case 'Médio':
         return 'bg-yellow-100 text-yellow-800'
       case 'Difícil':
@@ -42,7 +42,7 @@ export default function SongCard({ song }: SongCardProps) {
     <Link href={`/cifra/${song.slug}`} className="block">
       <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
         <div className="flex items-start space-x-4">
-          <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+          <div className="w-12 h-12 bg-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
             <Music className="h-6 w-6" />
           </div>
           

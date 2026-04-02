@@ -21,7 +21,7 @@ export default function CifraCard({ cifra }: CifraCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Fácil':
-        return 'bg-green-100 text-green-800'
+        return 'bg-violet-100 text-violet-800'
       case 'Médio':
         return 'bg-yellow-100 text-yellow-800'
       case 'Difícil':

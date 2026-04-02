@@ -16,7 +16,7 @@ export interface ChordPopupDiagramData {
 interface ChordPopupProps {
   chordName: string
   chordData?: ChordPopupDiagramData
-  /** Ver ProfessionalChordDiagram — evita verde de fallback antes do dicionário carregar. */
+  /** Ver ProfessionalChordDiagram — evita cor de fallback antes do dicionário carregar. */
   dictionaryReady?: boolean
   isVisible: boolean
   position: { x: number; y: number }
@@ -71,7 +71,7 @@ export default function ChordPopup({
         position: 'fixed',
         zIndex: 9999,
         backgroundColor: 'white',
-        border: '2px solid #00a651',
+        border: '2px solid #7c3aed',
         borderRadius: '8px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         padding: '4px 6px',

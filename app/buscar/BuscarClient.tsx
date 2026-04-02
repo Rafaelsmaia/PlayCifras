@@ -343,7 +343,7 @@ export default function BuscarClient() {
               onClick={() => setUrl({ type: t.id, page: 1 })}
               className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                 typeParam === t.id
-                  ? 'border-cifra-green bg-green-50 text-cifra-green'
+                  ? 'border-cifra-green bg-violet-50 text-cifra-green'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >

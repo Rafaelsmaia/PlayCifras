@@ -84,7 +84,7 @@ export default function ShortsCarousel() {
           href="https://www.youtube.com/results?search_query=PlayCifras+shorts"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center rounded-lg bg-[#00a651] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#009146]"
+          className="inline-flex shrink-0 items-center rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6d28d9]"
         >
           Ver mais no YouTube
         </a>

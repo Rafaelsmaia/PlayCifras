@@ -174,13 +174,13 @@ export default function Home() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/cifra/${song.slug}`}
-                      className="block truncate font-semibold text-gray-900 hover:text-[#00a651]"
+                      className="block truncate font-semibold text-gray-900 hover:text-[#7c3aed]"
                     >
                       {song.title}
                     </Link>
                     <Link
                       href={`/artista/${song.artist.slug}`}
-                      className="block truncate text-sm text-gray-500 hover:text-[#00a651]"
+                      className="block truncate text-sm text-gray-500 hover:text-[#7c3aed]"
                     >
                       {song.artist.name}
                     </Link>

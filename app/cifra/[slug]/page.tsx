@@ -10,11 +10,11 @@ import {
   CifraSongHeader,
   CifraVideoPlaceholder
 } from '@/components/cifra/CifraPageLayout'
-
-/** Verde Cifra Club — acordes no corpo da cifra (monoespaçado, sem trocar de fonte). */
-const CIFRA_BODY_CHORD_GREEN = '#00a651'
 import { extractUniqueChords, parseLineSegments } from '@/lib/chord-markup'
 import { normalizeArtistImage } from '@/lib/artist-image'
+
+/** Cor dos acordes no corpo da cifra (monoespaçado, sem trocar de fonte). */
+const CIFRA_BODY_CHORD_COLOR = '#7c3aed'
 
 interface Song {
   id: string
@@ -212,7 +212,7 @@ export default function CifraPage() {
               {song.key && (
                 <p
                   className="mb-3 font-roboto-mono text-sm font-bold sm:text-base"
-                  style={{ color: CIFRA_BODY_CHORD_GREEN }}
+                  style={{ color: CIFRA_BODY_CHORD_COLOR }}
                 >
                   Tom: {song.key}
                 </p>
@@ -226,7 +226,7 @@ export default function CifraPage() {
                     </span>
                   )}
                   {song.difficulty && (
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-800">
                       {song.difficulty}
                     </span>
                   )}
@@ -265,7 +265,7 @@ export default function CifraPage() {
                               <span aria-hidden className="invisible select-none">
                                 [
                               </span>
-                              <span style={{ color: CIFRA_BODY_CHORD_GREEN }}>
+                              <span style={{ color: CIFRA_BODY_CHORD_COLOR }}>
                                 {chordName}
                               </span>
                               <span aria-hidden className="invisible select-none">
@@ -278,7 +278,7 @@ export default function CifraPage() {
                           <span
                             key={`${lineIndex}-${segIndex}`}
                             className="cifra-chord cursor-pointer"
-                            style={{ color: CIFRA_BODY_CHORD_GREEN }}
+                            style={{ color: CIFRA_BODY_CHORD_COLOR }}
                             onMouseEnter={(e) => handleChordPointer(chordName, e)}
                             onMouseMove={(e) => handleChordPointer(chordName, e)}
                             onMouseLeave={handleChordLeave}

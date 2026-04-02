@@ -23,7 +23,8 @@ module.exports = {
           900: '#0c4a6e',
         },
         cifra: {
-          green: '#00a651',
+          /** Cor de acento (acordes, links, nav ativa) — roxo */
+          green: '#7c3aed',
           dark: '#1a1a1a',
           gray: '#f5f5f5',
         }

@@ -64,7 +64,7 @@ export default function GenreMenu({ value, onChange, className }: GenreMenuProps
 
   return (
     <div className={clsx('-mx-1 px-1', className ?? 'mb-8')}>
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin sm:flex-wrap sm:overflow-visible">
+      <div className="hide-scrollbar-x flex items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         {MAIN.map((g) => (
           <button
             key={g.slug}

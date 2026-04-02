@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Montserrat, Roboto_Mono } from 'next/font/google'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import Header from '@/components/Header'
+import MobileBottomNav from '@/components/MobileBottomNav'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -19,6 +20,10 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: 'PlayCifras - Cifras e Tablaturas',
   description: 'Encontre cifras e tablaturas das suas músicas favoritas',
+  icons: {
+    icon: [{ url: '/images/icon.png', type: 'image/png' }],
+    apple: '/images/icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -31,7 +36,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <Header />
-          <div className="min-h-screen bg-gray-50">{children}</div>
+          <div className="min-h-screen bg-gray-50 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+            {children}
+          </div>
+          <MobileBottomNav />
         </AuthProvider>
       </body>
     </html>

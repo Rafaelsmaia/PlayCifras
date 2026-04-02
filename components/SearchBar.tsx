@@ -221,7 +221,7 @@ export default function SearchBar() {
           <div className="border-t border-gray-100 px-3 py-2">
             <button
               type="button"
-              className="w-full rounded-md py-1.5 text-center text-sm font-medium text-cifra-green hover:bg-green-50"
+              className="w-full rounded-md py-1.5 text-center text-sm font-medium text-cifra-green hover:bg-violet-50"
               onClick={goToResults}
             >
               Ver todos os resultados

@@ -3,7 +3,7 @@
 import ChordpicDiagram from '@/components/ChordpicDiagram'
 import { toReactChordsChord } from '@/lib/chord-react-chords-format'
 
-const CHORD_NAME_ONLY_COLOR = '#00a651'
+const CHORD_NAME_ONLY_COLOR = '#7c3aed'
 const CHORD_LOADING_OR_KNOWN_COLOR = '#7c3aed'
 
 interface ProfessionalChordDiagramProps {
