@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search, Loader2, Music, User } from 'lucide-react'
+import { normalizeArtistImage } from '@/lib/artist-image'
 
 type SuggestionArtist = {
   id: string
@@ -17,14 +18,6 @@ type SuggestionSong = {
   title: string
   slug: string
   artist: { name: string; slug: string; image?: string | null }
-}
-
-function normalizeArtistImage(src?: string | null) {
-  if (!src) return null
-  return src
-    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
 }
 
 export default function SearchBar() {

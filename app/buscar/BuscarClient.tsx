@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, Music, User } from 'lucide-react'
+import { normalizeArtistImage } from '@/lib/artist-image'
 
 type SearchType = 'all' | 'songs' | 'artists'
 
@@ -238,16 +239,18 @@ export default function BuscarClient() {
                 <p className="text-gray-600">Nenhum artista encontrado.</p>
               ) : (
                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {artists.map((a) => (
+                  {artists.map((a) => {
+                    const artistImg = normalizeArtistImage(a.image)
+                    return (
                     <li key={a.id}>
                       <Link
                         href={`/artista/${a.slug}`}
                         className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 transition hover:border-gray-200 hover:bg-gray-50"
                       >
-                        {a.image ? (
+                        {artistImg ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={a.image}
+                            src={artistImg}
                             alt=""
                             className="h-12 w-12 shrink-0 rounded-full object-cover"
                           />
@@ -264,7 +267,7 @@ export default function BuscarClient() {
                         </span>
                       </Link>
                     </li>
-                  ))}
+                  )})}
                 </ul>
               )}
               {pgArtists && pgArtists.pages > 1 && (

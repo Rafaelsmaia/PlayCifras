@@ -164,7 +164,7 @@ export default function ChordpicDiagram({
       <text
         x={200}
         y={0}
-        fontFamily='Arial, "Helvetica Neue", Helvetica, sans-serif'
+        fontFamily="Montserrat, system-ui, sans-serif"
         fontSize={CHORDPIC_CHORD_TITLE_FONT_SIZE}
         fontWeight={700}
         textAnchor="middle"

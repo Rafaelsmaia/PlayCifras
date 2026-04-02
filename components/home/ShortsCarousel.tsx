@@ -8,7 +8,8 @@ const VIDEOS = [
   { id: 'kaE_1Ea3CN4' },
   { id: 'R7TZKTz21aM' },
   { id: 'b2Lk2JVfzpM' },
-  { id: 'bTd2nnpSfpY' }
+  { id: 'bTd2nnpSfpY' },
+  { id: 'oZ2xlST5EUU' }
 ] as const
 
 function embedUrl(videoId: string) {

@@ -39,7 +39,12 @@ export default function ProfessionalChordDiagram({
           width: 120
         }}
       >
-        <span style={{ fontSize: 15, fontWeight: 700, color }}>{chordName}</span>
+        <span
+          className="font-montserrat"
+          style={{ fontSize: 15, fontWeight: 700, color }}
+        >
+          {chordName}
+        </span>
       </div>
     )
   }

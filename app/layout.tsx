@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Montserrat } from 'next/font/google'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import Header from '@/components/Header'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-montserrat',
+})
 
 export const metadata: Metadata = {
   title: 'PlayCifras - Cifras e Tablaturas',
@@ -17,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={montserrat.variable}>
       <body className={inter.className}>
         <AuthProvider>
           <Header />

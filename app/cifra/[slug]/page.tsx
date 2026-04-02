@@ -13,6 +13,7 @@ import {
   CHORD_NAME_ONLY_GREEN
 } from '@/components/cifra/CifraPageLayout'
 import { extractUniqueChords, parseLineSegments } from '@/lib/chord-markup'
+import { normalizeArtistImage } from '@/lib/artist-image'
 
 interface Song {
   id: string
@@ -32,14 +33,6 @@ interface Song {
     slug: string
     image?: string | null
   }
-}
-
-function normalizeArtistImage(src?: string | null) {
-  if (!src) return null
-  return src
-    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
 }
 
 function slugFromParams(raw: string | string[] | undefined): string {
@@ -216,7 +209,7 @@ export default function CifraPage() {
           <section className="min-w-0 flex-1 py-1 lg:py-0">
             {song.key && (
               <p
-                className="mb-3 text-base font-bold sm:text-lg"
+                className="mb-3 font-montserrat text-base font-bold sm:text-lg"
                 style={{ color: CHORD_PURPLE }}
               >
                 Tom: {song.key}
@@ -239,9 +232,8 @@ export default function CifraPage() {
             )}
 
             <div
-              className="cifra-content text-[15px] leading-[1.35] text-gray-800"
+              className="cifra-content font-montserrat font-normal text-[15px] leading-[1.35] text-gray-800"
               style={{
-                fontFamily: "'Roboto Mono', 'Courier New', monospace",
                 wordBreak: 'break-word',
                 tabSize: 4
               }}

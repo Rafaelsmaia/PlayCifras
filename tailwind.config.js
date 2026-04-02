@@ -30,6 +30,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        montserrat: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
       },
     },
   },

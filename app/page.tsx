@@ -10,6 +10,7 @@ import {
   SongsGridSkeleton
 } from '@/components/home/HomeSkeletons'
 import ShortsCarousel from '@/components/home/ShortsCarousel'
+import { normalizeArtistImage } from '@/lib/artist-image'
 
 interface RankedSong {
   id: string
@@ -29,14 +30,6 @@ interface RankedArtist {
   slug: string
   totalViews: number
   image?: string | null
-}
-
-function normalizeArtistImage(src?: string | null) {
-  if (!src) return null
-  return src
-    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
 }
 
 function SongThumb({ src, alt }: { src?: string | null; alt: string }) {

@@ -54,9 +54,9 @@ a {
   display: none;
 }
 
-/* Estilos para cifras */
+/* Estilos para cifras (Montserrat via --font-montserrat no layout + font-montserrat na página) */
 .cifra-content {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
   line-height: 1.8;
   white-space: pre-line;
 }

@@ -4,17 +4,10 @@ import { Music } from 'lucide-react'
 import { prisma } from '@/lib/database'
 import SongListRow from '@/components/SongListRow'
 import ArtistProfileActions from '@/components/artist/ArtistProfileActions'
+import { normalizeArtistImage } from '@/lib/artist-image'
 import type { Metadata } from 'next'
 
 type Props = { params: { slug: string } }
-
-function normalizeArtistImage(src?: string | null) {
-  if (!src) return null
-  return src
-    .replace(/^\/IMAGES\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/images\/ARTISTAS\//, '/images/artistas/')
-    .replace(/^\/IMAGES\/artistas\//, '/images/artistas/')
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const artist = await prisma.artist.findUnique({

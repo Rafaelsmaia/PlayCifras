@@ -13,7 +13,12 @@
     "lint": "next lint",
     "import:kaggle": "tsx scripts/import-kaggle.ts",
     "import:chords": "tsx scripts/import-chords.ts",
-    "fix:genres": "tsx scripts/fix-genres.ts"
+    "fix:genres": "tsx scripts/fix-genres.ts",
+    "import:brazilian": "tsx scripts/import-brazilian-songs.ts",
+    "images:artists": "tsx scripts/match-artist-images.ts",
+    "images:artists:ensure": "tsx scripts/ensure-artist-images.ts",
+    "fetch:artist-images": "tsx scripts/fetch-artist-images.ts",
+    "clear:lastfm-placeholders": "tsx scripts/clear-lastfm-placeholder-images.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -24,6 +29,7 @@
     "autoprefixer": "^10.0.1",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.294.0",
@@ -44,6 +50,7 @@
     "@tonaljs/note": "^4.12.1",
     "@types/bcryptjs": "^2.4.6",
     "csv-parse": "^6.2.1",
+    "dotenv": "^17.4.0",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "tsx": "^4.21.0"
