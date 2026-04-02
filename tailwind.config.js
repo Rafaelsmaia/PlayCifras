@@ -31,6 +31,13 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         montserrat: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+        'roboto-mono': [
+          'var(--font-roboto-mono)',
+          'Roboto Mono',
+          'Courier New',
+          'Courier',
+          'monospace',
+        ],
       },
     },
   },

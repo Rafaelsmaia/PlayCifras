@@ -8,10 +8,11 @@ import ProfessionalChordDiagram from '@/components/ProfessionalChordDiagram'
 import {
   CifraToolbar,
   CifraSongHeader,
-  CifraVideoPlaceholder,
-  CHORD_PURPLE,
-  CHORD_NAME_ONLY_GREEN
+  CifraVideoPlaceholder
 } from '@/components/cifra/CifraPageLayout'
+
+/** Verde Cifra Club — acordes no corpo da cifra (monoespaçado, sem trocar de fonte). */
+const CIFRA_BODY_CHORD_GREEN = '#00a651'
 import { extractUniqueChords, parseLineSegments } from '@/lib/chord-markup'
 import { normalizeArtistImage } from '@/lib/artist-image'
 
@@ -186,7 +187,7 @@ export default function CifraPage() {
   }
 
   const chordsInContent = extractUniqueChords(song.content)
-  const contentLines = song.content.split('\n')
+  const contentLines = song.content.split(/\r?\n/)
   const artistImg = normalizeArtistImage(song.artist.image)
 
   return (
@@ -207,74 +208,89 @@ export default function CifraPage() {
           </aside>
 
           <section className="min-w-0 flex-1 py-1 lg:py-0">
-            {song.key && (
-              <p
-                className="mb-3 font-montserrat text-base font-bold sm:text-lg"
-                style={{ color: CHORD_PURPLE }}
-              >
-                Tom: {song.key}
-              </p>
-            )}
-
-            {(song.tempo || song.difficulty) && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {song.tempo && (
-                  <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-800">
-                    {song.tempo} BPM
-                  </span>
-                )}
-                {song.difficulty && (
-                  <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
-                    {song.difficulty}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div
-              className="cifra-content font-montserrat font-normal text-[15px] leading-[1.35] text-gray-800"
-              style={{
-                wordBreak: 'break-word',
-                tabSize: 4
-              }}
-            >
-              {contentLines.map((line, lineIndex) => (
-                <div
-                  key={lineIndex}
-                  className="min-h-[1.35em] whitespace-pre"
-                  style={{ lineHeight: 1.35 }}
+            <div className="mx-auto w-full max-w-[800px] rounded-lg bg-[#ffffff] px-4 py-5 sm:px-6 sm:py-6">
+              {song.key && (
+                <p
+                  className="mb-3 font-roboto-mono text-sm font-bold sm:text-base"
+                  style={{ color: CIFRA_BODY_CHORD_GREEN }}
                 >
-                  {line === '' ? (
-                    <span aria-hidden="true">{'\u00A0'}</span>
-                  ) : (
-                    parseLineSegments(line).map((seg, segIndex) => {
-                      if (seg.type === 'text') {
-                        return <span key={`${lineIndex}-${segIndex}`}>{seg.value}</span>
-                      }
-                      const chordName = seg.value
-                      const diagram = chordDiagramMap.get(chordName)
-                      const dictReady = dictionaryChords !== null
-                      const hasDiagram = !!diagram
-                      const chordColor =
-                        !dictReady || hasDiagram ? CHORD_PURPLE : CHORD_NAME_ONLY_GREEN
-                      return (
-                        <span
-                          key={`${lineIndex}-${segIndex}`}
-                          className="cursor-pointer px-px font-bold"
-                          style={{
-                            color: chordColor
-                          }}
-                          onMouseEnter={(e) => handleChordPointer(chordName, e)}
-                          onMouseMove={(e) => handleChordPointer(chordName, e)}
-                          onMouseLeave={handleChordLeave}
-                        >
-                          {chordName}
-                        </span>
-                      )
-                    })
+                  Tom: {song.key}
+                </p>
+              )}
+
+              {(song.tempo || song.difficulty) && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {song.tempo && (
+                    <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-800">
+                      {song.tempo} BPM
+                    </span>
+                  )}
+                  {song.difficulty && (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
+                      {song.difficulty}
+                    </span>
                   )}
                 </div>
-              ))}
+              )}
+
+              <div
+                className="cifra-content font-roboto-mono"
+                style={{ tabSize: 4 }}
+              >
+                {contentLines.map((line, lineIndex) => (
+                  <div
+                    key={lineIndex}
+                    className="block min-h-[1.6em] font-roboto-mono leading-[1.6]"
+                  >
+                    {line === '' ? (
+                      <span aria-hidden="true">{'\u00A0'}</span>
+                    ) : (
+                      parseLineSegments(line).map((seg, segIndex) => {
+                        if (seg.type === 'text') {
+                          return (
+                            <span key={`${lineIndex}-${segIndex}`}>{seg.value}</span>
+                          )
+                        }
+                        const chordName = seg.value
+                        if (seg.variant === 'bracket') {
+                          /* Colchetes invisíveis (visibility:hidden) mantêm a largura em mono — alinhamento com a fonte original [Am7] */
+                          return (
+                            <span
+                              key={`${lineIndex}-${segIndex}`}
+                              className="cifra-chord cursor-pointer"
+                              onMouseEnter={(e) => handleChordPointer(chordName, e)}
+                              onMouseMove={(e) => handleChordPointer(chordName, e)}
+                              onMouseLeave={handleChordLeave}
+                            >
+                              <span aria-hidden className="invisible select-none">
+                                [
+                              </span>
+                              <span style={{ color: CIFRA_BODY_CHORD_GREEN }}>
+                                {chordName}
+                              </span>
+                              <span aria-hidden className="invisible select-none">
+                                ]
+                              </span>
+                            </span>
+                          )
+                        }
+                        return (
+                          <span
+                            key={`${lineIndex}-${segIndex}`}
+                            className="cifra-chord cursor-pointer"
+                            style={{ color: CIFRA_BODY_CHORD_GREEN }}
+                            onMouseEnter={(e) => handleChordPointer(chordName, e)}
+                            onMouseMove={(e) => handleChordPointer(chordName, e)}
+                            onMouseLeave={handleChordLeave}
+                          >
+                            {chordName}
+                          </span>
+                        )
+                      })
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 

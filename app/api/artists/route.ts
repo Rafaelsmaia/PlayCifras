@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     if (ranking === 'views') {
+      console.time('[perf] prisma:artists:ranking-views')
       const songsByArtist = await prisma.song.groupBy({
         by: ['artistId'],
         where: { isPublic: true },
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
       const artistIds = songsByArtist.map((item) => item.artistId)
 
       if (artistIds.length === 0) {
+        console.timeEnd('[perf] prisma:artists:ranking-views')
         return NextResponse.json({
           artists: [],
           pagination: {
@@ -61,6 +63,7 @@ export async function GET(request: NextRequest) {
         })
         .filter(Boolean)
 
+      console.timeEnd('[perf] prisma:artists:ranking-views')
       return NextResponse.json({
         artists: rankedArtists,
         pagination: {

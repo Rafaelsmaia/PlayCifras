@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import useSWR from 'swr'
 import { homeRankingFetcher } from '@/lib/home-ranking-fetcher'
-import { HOME_RANKING_SONGS_KEY } from '@/lib/home-ranking-keys'
+import { HOME_RANKING_KEY } from '@/lib/home-ranking-keys'
 
 const MAIN: { slug: string; label: string }[] = [
   { slug: 'todos', label: 'Todos' },
@@ -31,7 +31,7 @@ interface GenreMenuProps {
 
 export default function GenreMenu({ value, onChange, className }: GenreMenuProps) {
   /** Partilha cache SWR com a Home (mesma chave = um único fetch). */
-  useSWR(HOME_RANKING_SONGS_KEY, homeRankingFetcher, {
+  useSWR(HOME_RANKING_KEY, homeRankingFetcher, {
     revalidateOnMount: false,
     dedupingInterval: 60_000,
     revalidateOnFocus: false

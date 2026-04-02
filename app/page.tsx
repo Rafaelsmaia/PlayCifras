@@ -1,6 +1,8 @@
 'use client'
 
 import { ChevronRight } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import Link from 'next/link'
 import clsx from 'clsx'
 import GenreMenu from '@/components/GenreMenu'
@@ -9,8 +11,30 @@ import {
   ArtistsRowSkeleton,
   SongsGridSkeleton
 } from '@/components/home/HomeSkeletons'
-import ShortsCarousel from '@/components/home/ShortsCarousel'
 import { normalizeArtistImage } from '@/lib/artist-image'
+import { needsUnoptimizedRemoteImage } from '@/lib/remote-image'
+
+const ShortsCarousel = dynamic(
+  () => import('@/components/home/ShortsCarousel'),
+  {
+    loading: () => (
+      <section
+        className="border-t border-gray-200 pt-14"
+        aria-hidden
+      >
+        <div className="mb-6 h-8 w-56 max-w-full animate-pulse rounded bg-gray-200" />
+        <div className="flex gap-4 overflow-hidden">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-40 w-64 shrink-0 animate-pulse rounded-lg bg-gray-100"
+            />
+          ))}
+        </div>
+      </section>
+    )
+  }
+)
 
 interface RankedSong {
   id: string
@@ -32,15 +56,40 @@ interface RankedArtist {
   image?: string | null
 }
 
-function SongThumb({ src, alt }: { src?: string | null; alt: string }) {
+function SongThumb({
+  src,
+  alt,
+  priority
+}: {
+  src?: string | null
+  alt: string
+  priority?: boolean
+}) {
   const normalized = normalizeArtistImage(src)
-  if (normalized) {
+  if (normalized?.startsWith('http')) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={normalized}
         alt=""
+        width={48}
+        height={48}
         className="h-12 w-12 shrink-0 rounded-md object-cover"
+        priority={!!priority}
+        loading={priority ? undefined : 'lazy'}
+        unoptimized={needsUnoptimizedRemoteImage(normalized)}
+      />
+    )
+  }
+  if (normalized?.startsWith('/')) {
+    return (
+      <Image
+        src={normalized}
+        alt=""
+        width={48}
+        height={48}
+        className="h-12 w-12 shrink-0 rounded-md object-cover"
+        priority={!!priority}
+        loading={priority ? undefined : 'lazy'}
       />
     )
   }
@@ -75,6 +124,7 @@ export default function Home() {
         <GenreMenu value={genre} onChange={setGenre} className="mb-3" />
 
         <div className="mb-8 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          {/* Proporção natural do asset (evita caixa forçada + fill que alterava o recorte) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/Banners/tiago-iorc.avif"
@@ -116,6 +166,7 @@ export default function Home() {
                   <SongThumb
                     src={song.artist.image}
                     alt={song.artist.name}
+                    priority={index < 6}
                   />
                   <span className="w-7 shrink-0 text-sm tabular-nums text-gray-500">
                     {String(index + 1).padStart(2, '0')}
@@ -165,20 +216,35 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-7 md:gap-x-3">
-              {(artists as RankedArtist[]).map((artist) => {
+              {(artists as RankedArtist[]).map((artist, index) => {
                 const imageSrc = normalizeArtistImage(artist.image)
+                const imgPriority = index < 4
                 return (
                   <Link
                     key={artist.id}
                     href={`/artista/${artist.slug}`}
                     className="flex flex-col items-center"
                   >
-                    {imageSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                    {imageSrc?.startsWith('http') ? (
+                      <Image
                         src={imageSrc}
                         alt=""
+                        width={96}
+                        height={96}
                         className="mb-2 h-[88px] w-[88px] rounded-full object-cover sm:h-24 sm:w-24"
+                        priority={imgPriority}
+                        loading={imgPriority ? undefined : 'lazy'}
+                        unoptimized={needsUnoptimizedRemoteImage(imageSrc)}
+                      />
+                    ) : imageSrc?.startsWith('/') ? (
+                      <Image
+                        src={imageSrc}
+                        alt=""
+                        width={96}
+                        height={96}
+                        className="mb-2 h-[88px] w-[88px] rounded-full object-cover sm:h-24 sm:w-24"
+                        priority={imgPriority}
+                        loading={imgPriority ? undefined : 'lazy'}
                       />
                     ) : (
                       <div

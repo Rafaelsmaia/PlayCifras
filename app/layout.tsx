@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Montserrat } from 'next/font/google'
+import { Inter, Montserrat, Roboto_Mono } from 'next/font/google'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import Header from '@/components/Header'
 import './globals.css'
@@ -9,6 +9,11 @@ const montserrat = Montserrat({
   subsets: ['latin'],
   weight: ['400', '600', '700'],
   variable: '--font-montserrat',
+})
+const robotoMono = Roboto_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-roboto-mono',
 })
 
 export const metadata: Metadata = {
@@ -22,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={montserrat.variable}>
+    <html lang="pt-BR" className={`${montserrat.variable} ${robotoMono.variable}`}>
       <body className={inter.className}>
         <AuthProvider>
           <Header />

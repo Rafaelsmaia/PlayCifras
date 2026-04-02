@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/database'
 import { songWhereForGenre } from '@/lib/genre-queries'
+import { HOME_SONG_SELECT } from '@/lib/home-ranking-queries'
 
 // GET /api/songs - Buscar cifras
 export async function GET(request: NextRequest) {
@@ -54,23 +55,33 @@ export async function GET(request: NextRequest) {
     const where: Prisma.SongWhereInput =
       parts.length === 1 ? parts[0] : { AND: parts }
 
-    // Buscar cifras
+    console.time('[perf] prisma:songs:list')
+
+    // Buscar cifras — modo `minimal`: só campos leves (sem content/acordes)
     const [songs, total] = await Promise.all([
-      prisma.song.findMany({
-        where,
-        include: minimal
-          ? { artist: true, genre: true }
-          : {
+      minimal
+        ? prisma.song.findMany({
+            where,
+            select: HOME_SONG_SELECT,
+            orderBy: [{ views: 'desc' }, { createdAt: 'desc' }],
+            skip,
+            take: limit
+          })
+        : prisma.song.findMany({
+            where,
+            include: {
               artist: true,
               chords: true,
               genre: true
             },
-        orderBy: [{ views: 'desc' }, { createdAt: 'desc' }],
-        skip,
-        take: limit
-      }),
+            orderBy: [{ views: 'desc' }, { createdAt: 'desc' }],
+            skip,
+            take: limit
+          }),
       prisma.song.count({ where })
     ])
+
+    console.timeEnd('[perf] prisma:songs:list')
 
     return NextResponse.json({
       songs,

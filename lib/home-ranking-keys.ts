@@ -1,3 +1,8 @@
-/** Chaves SWR partilhadas entre a Home e o GenreMenu (dedupe automático). */
-export const HOME_RANKING_SONGS_KEY = '/api/songs?limit=80&minimal=1'
-export const HOME_RANKING_ARTISTS_KEY = '/api/artists?limit=7&ranking=views'
+/** Chave SWR única: um fetch devolve músicas + artistas (cache 1h no servidor). */
+export const HOME_RANKING_KEY = '/api/home/ranking'
+
+/** @deprecated Use HOME_RANKING_KEY — mantido para não quebrar imports antigos. */
+export const HOME_RANKING_SONGS_KEY = HOME_RANKING_KEY
+
+/** @deprecated Use HOME_RANKING_KEY */
+export const HOME_RANKING_ARTISTS_KEY = HOME_RANKING_KEY

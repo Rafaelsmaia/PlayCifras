@@ -54,11 +54,26 @@ a {
   display: none;
 }
 
-/* Estilos para cifras (Montserrat via --font-montserrat no layout + font-montserrat na página) */
+/* Bloco da cifra — `pre` preserva todos os espaços (alinhamento acorde/letra/tablatura) */
 .cifra-content {
-  font-family: var(--font-montserrat), system-ui, sans-serif;
-  line-height: 1.8;
-  white-space: pre-line;
+  font-family: var(--font-roboto-mono), 'Roboto Mono', 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #212121;
+  white-space: pre;
+  background-color: #ffffff;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow-x: auto;
+  font-variant-ligatures: none;
+}
+
+/* Mesma família e peso nos acordes para não “escorregar” em monoespaçada */
+.cifra-content .cifra-chord {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0;
+  font-variant-ligatures: none;
 }
 
 .chord {

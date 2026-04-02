@@ -26,15 +26,21 @@ export function isChordToken(s: string): boolean {
   return CHORD_TOKEN.test(s.trim())
 }
 
-/** Divide uma linha em texto e acordes (entre colchetes ou texto plano). */
-export function parseLineSegments(line: string): Array<{ type: 'text' | 'chord'; value: string }> {
+/** Segmento de linha: texto cru preserva espaços; acorde em colchetes mantém largura `[Am]`. */
+export type LineSegment =
+  | { type: 'text'; value: string }
+  | { type: 'chord'; value: string; variant: 'plain' }
+  | { type: 'chord'; value: string; variant: 'bracket' }
+
+/** Divide uma linha em texto e acordes (entre colchetes ou texto plano). Não altera espaços. */
+export function parseLineSegments(line: string): LineSegment[] {
   const splitRe = new RegExp(
     '(\\[[^\\]]+\\])|(\\b[A-G]' + CHORD_BODY + '\\b)',
     'g'
   )
 
   const raw = line.split(splitRe)
-  const out: Array<{ type: 'text' | 'chord'; value: string }> = []
+  const out: LineSegment[] = []
 
   for (const part of raw) {
     if (part === undefined || part === '') continue
@@ -42,7 +48,11 @@ export function parseLineSegments(line: string): Array<{ type: 'text' | 'chord';
     if (part.startsWith('[') && part.endsWith(']')) {
       const inner = part.slice(1, -1)
       if (isChordToken(inner)) {
-        out.push({ type: 'chord', value: inner.trim() })
+        out.push({
+          type: 'chord',
+          value: inner.trim(),
+          variant: 'bracket'
+        })
       } else {
         out.push({ type: 'text', value: part })
       }
@@ -50,7 +60,7 @@ export function parseLineSegments(line: string): Array<{ type: 'text' | 'chord';
     }
 
     if (isChordToken(part)) {
-      out.push({ type: 'chord', value: part.trim() })
+      out.push({ type: 'chord', value: part.trim(), variant: 'plain' })
     } else {
       out.push({ type: 'text', value: part })
     }
