@@ -1,15 +1,41 @@
 import type { Metadata } from 'next'
-import { Inter, Montserrat, Roboto_Mono } from 'next/font/google'
+import {
+  Fredoka,
+  Inter,
+  Montserrat,
+  Nunito,
+  Poppins,
+  Roboto_Mono,
+} from 'next/font/google'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { AdSenseScript } from '@/components/ads/AdSenseScript'
 import Header from '@/components/Header'
 import MobileBottomNav from '@/components/MobileBottomNav'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
 const montserrat = Montserrat({
   subsets: ['latin'],
   weight: ['400', '600', '700'],
   variable: '--font-montserrat',
+})
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  variable: '--font-nunito',
+})
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-poppins',
+})
+const fredoka = Fredoka({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-fredoka',
 })
 const robotoMono = Roboto_Mono({
   subsets: ['latin'],
@@ -32,8 +58,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={`${montserrat.variable} ${robotoMono.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${inter.variable} ${montserrat.variable} ${nunito.variable} ${poppins.variable} ${fredoka.variable} ${robotoMono.variable}`}
+    >
       <body className={inter.className}>
+        <AdSenseScript />
         <AuthProvider>
           <Header />
           <div className="min-h-screen bg-gray-50 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">

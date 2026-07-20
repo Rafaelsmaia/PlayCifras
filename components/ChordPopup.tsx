@@ -2,16 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import ProfessionalChordDiagram from './ProfessionalChordDiagram'
+import type { ChordPopupDiagramData } from '@/lib/chord-diagram-types'
 
-export interface ChordPopupDiagramData {
-  frets: number[]
-  fingering: number[]
-  barres?: Array<{
-    fromString: number
-    toString: number
-    fret: number
-  }>
-}
+export type { ChordPopupDiagramData } from '@/lib/chord-diagram-types'
 
 interface ChordPopupProps {
   chordName: string
@@ -71,22 +64,23 @@ export default function ChordPopup({
         position: 'fixed',
         zIndex: 9999,
         backgroundColor: 'white',
-        border: '2px solid #7c3aed',
-        borderRadius: '8px',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        padding: '4px 6px',
+        padding: '8px 10px',
         pointerEvents: 'none',
         left: popupPosition.x,
         top: popupPosition.y,
         boxSizing: 'border-box',
         width: 'fit-content',
-        maxWidth: 'min(calc(100vw - 32px), 280px)'
+        maxWidth: 'min(calc(100vw - 32px), 200px)'
       }}
     >
       <ProfessionalChordDiagram
         chordName={chordName}
         chordData={chordData}
         dictionaryReady={dictionaryReady}
+        size="sm"
       />
     </div>
   )

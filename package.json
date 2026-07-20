@@ -8,16 +8,23 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed && tsx scripts/seed-database.ts && tsx scripts/import-chords.ts",
+    "db:setup": "prisma migrate deploy && npm run db:seed",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
     "import:kaggle": "tsx scripts/import-kaggle.ts",
+    "import:cifraclub": "tsx scripts/import-cifraclub.ts",
     "import:chords": "tsx scripts/import-chords.ts",
     "fix:genres": "tsx scripts/fix-genres.ts",
-    "import:brazilian": "tsx scripts/import-brazilian-songs.ts",
+    "fix:chord-alignment": "tsx scripts/fix-chord-alignment.ts",
+    "export:chord-pngs": "tsx scripts/export-chord-pngs.ts",
     "images:artists": "tsx scripts/match-artist-images.ts",
     "images:artists:ensure": "tsx scripts/ensure-artist-images.ts",
     "fetch:artist-images": "tsx scripts/fetch-artist-images.ts",
+    "link:top-videos": "tsx scripts/link-top-song-videos.ts",
     "clear:lastfm-placeholders": "tsx scripts/clear-lastfm-placeholder-images.ts"
   },
   "dependencies": {
@@ -45,12 +52,14 @@
     "vexflow": "^5.0.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tonaljs/chord": "^6.1.2",
     "@tonaljs/chord-type": "^5.1.1",
     "@tonaljs/note": "^4.12.1",
     "@types/bcryptjs": "^2.4.6",
     "csv-parse": "^6.2.1",
     "dotenv": "^17.4.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "tsx": "^4.21.0"

@@ -3,6 +3,9 @@ node_modules
 
 # Keep environment variables out of version control
 .env
+.env.local
+.env*.local
+.env.supabase.bak
 
 # Banco local SQLite (grande; não versionar — use Postgres/migração em produção)
 prisma/dev.db
@@ -14,3 +17,9 @@ archive.zip
 data/kaggle-extract/
 
 .vercel
+
+# Exportações geradas (PNGs de acordes, etc.)
+/exports/
+
+# Fontes baixadas para scripts de export
+/scripts/fonts/

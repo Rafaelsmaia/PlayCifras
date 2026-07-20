@@ -63,6 +63,12 @@ export default function Header() {
                   height={144}
                 />
               </Link>
+              <Link
+                href="/dicionario"
+                className="hidden text-sm font-semibold text-gray-600 transition-colors hover:text-cifra-green lg:inline"
+              >
+                Dicionário
+              </Link>
             </div>
 
             <div className="mx-8 flex min-w-0 max-w-2xl flex-1">

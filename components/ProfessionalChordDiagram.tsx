@@ -1,73 +1,28 @@
 'use client'
 
-import ChordpicDiagram from '@/components/ChordpicDiagram'
-import { toReactChordsChord } from '@/lib/chord-react-chords-format'
-
-const CHORD_NAME_ONLY_COLOR = '#7c3aed'
-const CHORD_LOADING_OR_KNOWN_COLOR = '#7c3aed'
+import CifraClubChordDiagram from '@/components/CifraClubChordDiagram'
+import type { ChordPopupDiagramData } from '@/lib/chord-diagram-types'
 
 interface ProfessionalChordDiagramProps {
   chordName: string
   dictionaryReady?: boolean
-  chordData?: {
-    frets: number[]
-    fingering: number[]
-    barres?: Array<{
-      fromString: number
-      toString: number
-      fret: number
-    }>
-  }
+  chordData?: ChordPopupDiagramData
+  size?: 'sm' | 'md'
 }
 
+/** Diagrama de acorde — visual estilo Cifra Club. */
 export default function ProfessionalChordDiagram({
   chordName,
   chordData,
-  dictionaryReady = true
+  dictionaryReady = true,
+  size = 'md'
 }: ProfessionalChordDiagramProps) {
-  if (!chordData) {
-    const color =
-      dictionaryReady ? CHORD_NAME_ONLY_COLOR : CHORD_LOADING_OR_KNOWN_COLOR
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 120,
-          padding: 8,
-          width: 120
-        }}
-      >
-        <span
-          className="font-montserrat"
-          style={{ fontSize: 15, fontWeight: 700, color }}
-        >
-          {chordName}
-        </span>
-      </div>
-    )
-  }
-
-  const barreAbsolutes =
-    chordData.barres?.map((b) => b.fret).filter((f) => f > 0) ?? null
-
-  const rc = toReactChordsChord(
-    chordData.frets,
-    chordData.fingering,
-    barreAbsolutes
-  )
-
   return (
-    <div className="mx-auto w-fit max-w-[280px] text-center">
-      <ChordpicDiagram
-        chordName={chordName}
-        relFrets={rc.frets}
-        fingers={rc.fingers}
-        baseFret={rc.baseFret}
-        barresFromDictionary={chordData.barres}
-        relBarreValues={rc.barres}
-      />
-    </div>
+    <CifraClubChordDiagram
+      chordName={chordName}
+      chordData={chordData}
+      dictionaryReady={dictionaryReady}
+      size={size}
+    />
   )
 }

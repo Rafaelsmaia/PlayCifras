@@ -69,6 +69,35 @@ export function parseLineSegments(line: string): LineSegment[] {
   return out
 }
 
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+/** Converte o texto bruto da cifra em HTML pronto para exibição. */
+export function renderCifraHtml(content: string): string {
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+  return normalized
+    .split('\n')
+    .map((line) =>
+      parseLineSegments(line)
+        .map((seg) => {
+          if (seg.type === 'text') return escapeHtmlText(seg.value)
+          const name = escapeHtmlText(seg.value)
+          // Colchetes invisíveis preservam a largura monoespaçada (alinhamento com a letra)
+          if (seg.variant === 'bracket') {
+            return `<b class="cifra-chord" data-chord="${name}"><span class="cifra-chord-bracket" aria-hidden="true">[</span>${name}<span class="cifra-chord-bracket" aria-hidden="true">]</span></b>`
+          }
+          return `<b class="cifra-chord" data-chord="${name}">${name}</b>`
+        })
+        .join('')
+    )
+    .join('\n')
+}
+
 /** Lista única de acordes no conteúdo (colchetes + texto plano). */
 export function extractUniqueChords(content: string): string[] {
   const found = new Set<string>()

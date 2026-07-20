@@ -1,14 +1,10 @@
 import type { ChordDictionary } from '@prisma/client'
-import type { ChordPopupDiagramData } from '@/components/ChordPopup'
-
-/** Corda 1 = aguda … 6 = grave; índice 0 = grave. */
-function stringNumberFromDataIndex(i: number): number {
-  return 6 - i
-}
+import type { ChordPopupDiagramData } from '@/lib/chord-diagram-types'
 
 /**
  * Pestana: se `barre` e `barreFret`, do número de corda mais grave ao mais agudo
  * com `frets[i] === barreFret`.
+ * Corda 1 = aguda … N = grave; índice 0 = grave (violão N=6, ukulele N=4).
  */
 export function computeBarresFromDictionaryRow(
   frets: number[],
@@ -17,10 +13,11 @@ export function computeBarresFromDictionaryRow(
 ): NonNullable<ChordPopupDiagramData['barres']> {
   if (!barre || barreFret == null || barreFret <= 0) return []
 
+  const stringCount = frets.length
   const stringNums = frets
     .map((f, i) => ({ f, i }))
     .filter(({ f }) => f === barreFret && f > 0)
-    .map(({ i }) => stringNumberFromDataIndex(i))
+    .map(({ i }) => stringCount - i)
 
   if (stringNums.length < 2) return []
 

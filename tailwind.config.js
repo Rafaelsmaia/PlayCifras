@@ -30,8 +30,11 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
         montserrat: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+        nunito: ['var(--font-nunito)', 'Nunito', 'system-ui', 'sans-serif'],
+        poppins: ['var(--font-poppins)', 'Poppins', 'system-ui', 'sans-serif'],
+        fredoka: ['var(--font-fredoka)', 'Fredoka', 'system-ui', 'sans-serif'],
         'roboto-mono': [
           'var(--font-roboto-mono)',
           'Roboto Mono',

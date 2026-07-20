@@ -31,6 +31,11 @@ function getMaxRows(): number {
 
 const MAX_ROWS = getMaxRows()
 
+/** Filtro opcional por idioma do CSV (ex.: LANG=pt). Vazio = todos. */
+const LANG_FILTER = (process.env.LANG || process.env.KAGGLE_LANG || '')
+  .trim()
+  .toLowerCase()
+
 function slugify(s: string, max = 80): string {
   const out = s
     .toLowerCase()
@@ -94,6 +99,7 @@ async function main() {
     'MAX_ROWS:',
     MAX_ROWS === Number.POSITIVE_INFINITY ? 'TODAS (sem limite)' : MAX_ROWS
   )
+  if (LANG_FILTER) console.log('LANG filter:', LANG_FILTER)
 
   const artistCache = new Map<string, { id: string; slug: string }>()
   let imported = 0
@@ -113,6 +119,13 @@ async function main() {
   for await (const row of stream as AsyncIterable<Record<string, string>>) {
     if (Number.isFinite(MAX_ROWS) && imported >= MAX_ROWS) break
     rowNum += 1
+
+    if (LANG_FILTER) {
+      const lang = (row.lang || '').trim().toLowerCase()
+      if (lang !== LANG_FILTER && !lang.startsWith(LANG_FILTER)) {
+        continue
+      }
+    }
 
     const artistName = (row.artist_name || '').trim()
     const songName = (row.song_name || '').trim()

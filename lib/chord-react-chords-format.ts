@@ -43,7 +43,7 @@ function computeBaseAndRel(absFrets: number[]): { baseFret: number; rel: number[
 
   let rel = relativeSlice(absFrets, baseFret)
   let maxRel = Math.max(0, ...rel.filter((f) => f > 0))
-  while (maxRel > 5 && baseFret < maxF) {
+  while (maxRel > 4 && baseFret < maxF) {
     baseFret += 1
     rel = relativeSlice(absFrets, baseFret)
     maxRel = Math.max(0, ...rel.filter((f) => f > 0))
@@ -61,7 +61,7 @@ export function toReactChordsChord(
   const barres: number[] = []
   for (const abs of barreAbsoluteFrets ?? []) {
     const r = abs - baseFret + 1
-    if (r >= 1 && r <= 5 && rel.some((f) => f === r)) {
+    if (r >= 1 && r <= 4 && rel.some((f) => f === r)) {
       barres.push(r)
     }
   }

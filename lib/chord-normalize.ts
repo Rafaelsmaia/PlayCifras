@@ -12,12 +12,13 @@ export function tonalMajorSymbolToLyricName(symbol: string): string {
 
 /**
  * Chaves alternativas para busca no dicionário (mesmo acorde, grafias diferentes).
+ * Nota: `M` final (Tonal, ex. CM) NÃO usa flag `i` — senão `Cm` (menor) vira `C`.
  */
 export function chordLookupKeys(name: string): string[] {
   const n = name.trim()
   if (!n) return []
   const keys = new Set<string>([n])
-  const major = /^([A-G](?:#|b)?)M$/i.exec(n)
+  const major = /^([A-G](?:#|b)?)M$/.exec(n)
   if (major) keys.add(major[1])
   return Array.from(keys)
 }

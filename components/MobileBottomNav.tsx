@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
-import { Home, Search, User } from 'lucide-react'
+import { Home, Search, Guitar, User } from 'lucide-react'
 
 const items = [
   { href: '/', label: 'Início', icon: Home, match: (p: string) => p === '/' },
@@ -12,6 +12,12 @@ const items = [
     label: 'Busca',
     icon: Search,
     match: (p: string) => p === '/buscar' || p.startsWith('/buscar?')
+  },
+  {
+    href: '/dicionario',
+    label: 'Acordes',
+    icon: Guitar,
+    match: (p: string) => p.startsWith('/dicionario')
   },
   {
     href: '/perfil',

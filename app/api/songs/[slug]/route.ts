@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database'
-import { chordDiagramsForChordNames } from '@/lib/chord-dictionary-batch'
-import { extractUniqueChords } from '@/lib/chord-markup'
+import { getSongBySlug } from '@/lib/get-song-by-slug'
 import { resolveDynamicParams } from '@/lib/route-params'
 
 // GET /api/songs/[slug] - Buscar cifra específica
@@ -11,43 +10,22 @@ export async function GET(
 ) {
   try {
     const { slug: rawSlug } = await resolveDynamicParams(context.params)
-    const slug = decodeURIComponent(rawSlug)
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[api/songs/[slug]] GET slug:', slug)
+      console.log('[api/songs/[slug]] GET slug:', rawSlug)
     }
 
-    const song = await prisma.song.findUnique({
-      where: { slug },
-      include: {
-        artist: true
-      }
-    })
+    const result = await getSongBySlug(rawSlug)
 
-    if (!song) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[api/songs/[slug]] song not found for slug:', slug)
-      }
-      return NextResponse.json(
-        { error: 'Song not found' },
-        { status: 404 }
-      )
+    if (result.status === 'not_found') {
+      return NextResponse.json({ error: 'Song not found' }, { status: 404 })
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[api/songs/[slug]] song:', song.id, song.title)
+    if (result.status === 'error') {
+      return NextResponse.json({ error: 'Failed to fetch song' }, { status: 500 })
     }
 
-    type Dict = Awaited<ReturnType<typeof chordDiagramsForChordNames>>
-    let chordDictionary: Dict = {}
-    try {
-      const chordNames = extractUniqueChords(song.content)
-      chordDictionary = await chordDiagramsForChordNames(chordNames, 'guitar')
-    } catch (dictErr) {
-      console.error('[api/songs/[slug]] chord dictionary skipped (música ainda devolvida):', dictErr)
-    }
-
-    return NextResponse.json({ ...song, chordDictionary })
+    return NextResponse.json(result.song)
   } catch (error) {
     console.error('Error fetching song:', error)
     return NextResponse.json(

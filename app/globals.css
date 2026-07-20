@@ -70,10 +70,22 @@ a {
 
 /* Mesma família e peso nos acordes para não “escorregar” em monoespaçada */
 .cifra-content .cifra-chord {
+  color: #7c3aed;
+  cursor: pointer;
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0;
   font-variant-ligatures: none;
+}
+
+/* Preserva largura `[Am]` no monoespaçado sem mostrar os colchetes */
+.cifra-content .cifra-chord-bracket {
+  visibility: hidden;
+  user-select: none;
+}
+
+.cifra-content .cifra-chord:hover {
+  background-color: #f5f3ff;
 }
 
 .chord {

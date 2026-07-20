@@ -1,0 +1,23 @@
+# Banco local do PlayCifras (para desenvolvimento no seu PC).
+# Uso: docker compose up -d  (se tiver Docker Desktop instalado)
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: playcifras-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: playcifras
+      POSTGRES_PASSWORD: playcifras
+      POSTGRES_DB: playcifras
+    volumes:
+      - playcifras_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U playcifras -d playcifras"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  playcifras_pgdata:
