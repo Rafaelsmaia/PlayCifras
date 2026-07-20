@@ -6,12 +6,12 @@ import {
 
 export const getCachedHomeSongs = unstable_cache(
   fetchHomeSongsForRanking,
-  ['home-ranking-songs-v3'],
+  ['home-ranking-songs-v4'],
   { revalidate: 3600 }
 )
 
 export const getCachedHomeArtists = unstable_cache(
   fetchHomeArtistsByViews,
-  ['home-ranking-artists-v3'],
+  ['home-ranking-artists-v4'],
   { revalidate: 3600 }
 )
