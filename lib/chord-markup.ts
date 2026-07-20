@@ -3,7 +3,7 @@
  * Evita falsos positivos comuns: exige limite de palavra no texto plano.
  */
 
-/** Corpo do acorde após a tônica [A-G] (ex.: m, 7, sus4, /F). */
+/** Corpo do acorde após a tônica [A-G] (ex.: m, 7, 7M, sus4, /F). */
 const CHORD_BODY =
   '(?:#|b)?' +
   '(?:' +
@@ -16,6 +16,8 @@ const CHORD_BODY =
   'm\\d*|' +
   '\\+|' +
   '°|' +
+  // 7M / 9M = maj7/maj9 (notação BR); precisa vir antes de \\d+ isolado
+  '\\d+M|' +
   '\\d+' +
   ')*' +
   '(?:/[A-G](?:#|b)?)?'
