@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
-import { AdBanner } from '@/components/ads/AdBanner'
 import CifraPageClient from '@/components/cifra/CifraPageClient'
 import { CifraContent } from '@/components/cifra/CifraContent'
 import { CifraSongHeader } from '@/components/cifra/CifraSongHeader'
@@ -77,12 +76,6 @@ export default async function CifraPage({
 
   return (
     <div className="min-h-screen bg-white print:bg-white">
-      <div className="border-b border-gray-100 bg-white print:hidden">
-        <div className="mx-auto max-w-[1280px] px-4 py-3 sm:px-5 lg:px-8">
-          <AdBanner slot="cifra-top" />
-        </div>
-      </div>
-
       <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-5 lg:px-8">
         <CifraSongHeader
           title={song.title}

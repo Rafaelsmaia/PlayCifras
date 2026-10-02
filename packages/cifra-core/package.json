@@ -1,0 +1,11 @@
+{
+  "name": "@playcifras/cifra-core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/chord-markup.ts",
+  "types": "src/chord-markup.ts",
+  "exports": {
+    ".": "./src/chord-markup.ts",
+    "./chord-markup": "./src/chord-markup.ts"
+  }
+}

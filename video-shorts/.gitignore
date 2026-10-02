@@ -1,0 +1,4 @@
+# Gerado por short:prepare — não versionar binários grandes
+public/short/
+out/
+node_modules/

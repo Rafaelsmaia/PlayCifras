@@ -1,6 +1,10 @@
 /**
  * Detecção de acordes no estilo cifra (colchetes e texto solto).
  * Evita falsos positivos comuns: exige limite de palavra no texto plano.
+ *
+ * Não usar `\b` no fim do token: `#` não é "word char", então `\b` após
+ * `A/C#` ou `C#` falha (ou encurta para `A/C` / `C`) quando o próximo
+ * caractere é espaço/fim de linha.
  */
 
 /** Corpo do acorde após a tônica [A-G] (ex.: m, 7, 7M, sus4, /F). */
@@ -22,7 +26,13 @@ const CHORD_BODY =
   ')*' +
   '(?:/[A-G](?:#|b)?)?'
 
+/** Fim do acorde em texto plano (não continua com letra/dígito/#/b/barra). */
+const CHORD_TRAIL = '(?![A-Za-z0-9#b/°+])'
+
 const CHORD_TOKEN = new RegExp(`^[A-G]${CHORD_BODY}$`)
+
+/** Acorde em texto solto: começa em limite de palavra, termina sem \\b após #. */
+const PLAIN_CHORD_SRC = `\\b[A-G]${CHORD_BODY}${CHORD_TRAIL}`
 
 export function isChordToken(s: string): boolean {
   return CHORD_TOKEN.test(s.trim())
@@ -36,10 +46,7 @@ export type LineSegment =
 
 /** Divide uma linha em texto e acordes (entre colchetes ou texto plano). Não altera espaços. */
 export function parseLineSegments(line: string): LineSegment[] {
-  const splitRe = new RegExp(
-    '(\\[[^\\]]+\\])|(\\b[A-G]' + CHORD_BODY + '\\b)',
-    'g'
-  )
+  const splitRe = new RegExp(`(\\[[^\\]]+\\])|(${PLAIN_CHORD_SRC})`, 'g')
 
   const raw = line.split(splitRe)
   const out: LineSegment[] = []
@@ -53,7 +60,7 @@ export function parseLineSegments(line: string): LineSegment[] {
         out.push({
           type: 'chord',
           value: inner.trim(),
-          variant: 'bracket'
+          variant: 'bracket',
         })
       } else {
         out.push({ type: 'text', value: part })
@@ -109,7 +116,7 @@ export function extractUniqueChords(content: string): string[] {
     if (isChordToken(m[1])) found.add(m[1].trim())
   }
 
-  const plainRe = new RegExp(`\\b[A-G]${CHORD_BODY}\\b`, 'g')
+  const plainRe = new RegExp(PLAIN_CHORD_SRC, 'g')
   const plain = content.match(plainRe)
   if (plain) {
     for (const p of plain) {

@@ -47,11 +47,13 @@ export function resolveGuitarChord(
   name: string
 ): ResolvedGuitarChord | null {
   const library = getGuitarChordLibrary()
-  const base = chordBaseName(name)
-
-  for (const key of chordLookupKeys(base)) {
-    const hit = library[key]
-    if (hit) return hit
+  // Tenta nome completo (C9/E, C4…) e depois a base sem baixo
+  for (const candidate of [name.trim(), chordBaseName(name)]) {
+    if (!candidate) continue
+    for (const key of chordLookupKeys(candidate)) {
+      const hit = library[key]
+      if (hit) return hit
+    }
   }
   return null
 }

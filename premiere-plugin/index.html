@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PlayCifras</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="index.js"></script>
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">PlayCifras</div>
+      <button type="button" id="btn-settings" class="icon-btn" title="Configurações">
+        ⚙
+      </button>
+    </header>
+
+    <section id="view-settings" class="panel hidden">
+      <h2>Configurações</h2>
+      <label class="field">
+        URL da API PlayCifras
+        <input id="api-url" type="text" placeholder="http://localhost:3000" />
+      </label>
+      <p class="hint">
+        Em desenvolvimento use <code>http://localhost:3000</code> com o
+        <code>npm run dev</code> rodando. O render do overlay usa Remotion no
+        mesmo PC.
+      </p>
+      <div class="row">
+        <button type="button" id="btn-save-settings" class="btn primary">
+          Salvar
+        </button>
+        <button type="button" id="btn-back" class="btn">Voltar</button>
+      </div>
+    </section>
+
+    <div id="view-app" class="app">
+      <nav class="tabs">
+        <button type="button" id="tab-diagrams" class="tab active">Diagramas</button>
+        <button type="button" id="tab-shorts" class="tab">Shorts</button>
+      </nav>
+
+      <section id="view-diagrams" class="panel">
+        <label class="field">
+          Cifra
+          <input id="dg-search" type="search" placeholder="Buscar música…" autocomplete="off" />
+        </label>
+        <div id="dg-results" class="list compact hidden" role="list"></div>
+
+        <div id="dg-song" class="song hidden">
+          <h2 id="dg-song-title"></h2>
+          <div id="dg-sequence" class="chips"></div>
+          <p class="hint">Clique num acorde para começar a partir dele.</p>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Modo
+            <select id="dg-mode">
+              <option value="manual">Manual (marcadores)</option>
+              <option value="click">Click (BPM)</option>
+            </select>
+          </label>
+          <label class="field grow">
+            Cor do marcador
+            <select id="dg-color">
+              <option value="0">Verde (padrão do M)</option>
+              <option value="1">Vermelho</option>
+              <option value="2">Roxo</option>
+              <option value="3">Laranja</option>
+              <option value="4">Amarelo</option>
+              <option value="5">Branco</option>
+              <option value="6">Azul</option>
+              <option value="7">Ciano</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="dg-click-opts" class="row hidden">
+          <label class="field grow">
+            BPM
+            <input id="dg-bpm" type="number" min="20" max="300" value="90" />
+          </label>
+          <label class="field grow">
+            Tempos por acorde
+            <input id="dg-beats" type="number" min="1" max="32" value="4" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Começar no acorde nº
+            <input id="dg-start" type="number" min="1" value="1" />
+          </label>
+          <label class="field grow">
+            Trilha de vídeo
+            <input id="dg-track" type="number" min="1" max="20" value="2" />
+          </label>
+        </div>
+
+        <p id="dg-mode-hint" class="hint"></p>
+
+        <div class="row tight">
+          <button type="button" id="dg-read" class="btn">Ler marcadores</button>
+          <span id="dg-status" class="status"></span>
+        </div>
+
+        <p id="dg-warning" class="warning hidden"></p>
+        <div id="dg-rows" class="list rows hidden"></div>
+
+        <button type="button" id="dg-render" class="btn primary" disabled>
+          Gerar animação e colocar na timeline
+        </button>
+      </section>
+
+      <section id="view-main" class="panel hidden">
+        <label class="field">
+          Buscar
+          <input
+            id="search"
+            type="search"
+            placeholder="Título, artista ou slug…"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="row tight">
+          <button type="button" id="btn-refresh" class="btn">Atualizar</button>
+          <span id="status" class="status"></span>
+        </div>
+
+        <div id="list" class="list" role="list"></div>
+
+        <div id="detail" class="detail hidden">
+          <h2 id="detail-title"></h2>
+          <p id="detail-meta" class="meta"></p>
+          <p id="detail-warning" class="warning hidden"></p>
+          <div class="row">
+            <button type="button" id="btn-overlay" class="btn primary" disabled>
+              Colocar overlay na timeline
+            </button>
+            <button type="button" id="btn-close-detail" class="btn">Fechar</button>
+          </div>
+          <div class="row">
+            <button type="button" id="btn-import" class="btn" disabled>
+              Só peças (SRT/PNG)
+            </button>
+          </div>
+          <p class="hint">
+            <strong>Overlay</strong> = um .mov transparente (letra + diagrama +
+            marca) em V2, sobre o seu vídeo. Sincronize L/D no editor antes.
+            Render pode levar alguns minutos na 1ª vez.
+          </p>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

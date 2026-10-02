@@ -56,22 +56,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT?.trim() || ''
-
   return (
     <html
       lang="pt-BR"
       className={`${inter.variable} ${montserrat.variable} ${nunito.variable} ${poppins.variable} ${fredoka.variable} ${robotoMono.variable}`}
     >
-      <head>
-        {adsenseClient ? (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            crossOrigin="anonymous"
-          />
-        ) : null}
-      </head>
       <body className={inter.className}>
         <AuthProvider>
           <Header />

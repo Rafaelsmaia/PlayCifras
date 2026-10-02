@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "PlayCifras",
+    "slug": "playcifras",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "playcifras",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.playcifras.app",
+      "infoPlist": {
+        "CFBundleDisplayName": "PlayCifras",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.playcifras.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#7c3aed",
+        "foregroundImage": "./assets/images/icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "playcifras",
+              "host": "cifra",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#7c3aed"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eee7a64a-ee52-4ce4-8a4f-77a4f1107ab0"
+      },
+      "privacyPolicyUrl": "https://playcifras.vercel.app/privacidade",
+      "termsOfServiceUrl": "https://playcifras.vercel.app/termos"
+    }
+  }
+}

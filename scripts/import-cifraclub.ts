@@ -4,6 +4,7 @@
  * Uso:
  *   npx tsx scripts/import-cifraclub.ts
  *   npx tsx scripts/import-cifraclub.ts --limit=20
+ *   npx tsx scripts/import-cifraclub.ts --artist=fernanda-brum --limit=30
  *   npx tsx scripts/import-cifraclub.ts legiao-urbana/tempo-perdido
  *
  * Variáveis:
@@ -114,6 +115,56 @@ async function fetchTopPaths(limit: number): Promise<RankingItem[]> {
   return items.slice(0, limit)
 }
 
+/**
+ * Top músicas de um artista (página /artista/musicas.html — ordem = mais acessadas).
+ */
+async function fetchArtistSongPaths(
+  artistSlug: string,
+  limit: number
+): Promise<RankingItem[]> {
+  const url = `${BASE}/${artistSlug}/musicas.html`
+  const { data, status } = await http.get(url, { validateStatus: () => true })
+  if (status !== 200 || typeof data !== 'string') {
+    console.error('Falha ao abrir', url, status)
+    return []
+  }
+
+  const $ = cheerio.load(data)
+  const items: RankingItem[] = []
+  const seen = new Set<string>()
+  const re = new RegExp(`^/${artistSlug}/([a-z0-9-]+)$`, 'i')
+
+  $('a[href]').each((_, el) => {
+    if (items.length >= limit) return false
+    let href = ($(el).attr('href') || '').split('?')[0].split('#')[0]
+    if (!href.startsWith('/')) return
+    href = href.replace(/\/$/, '')
+    const m = href.match(re)
+    if (!m) return
+    const songSlug = m[1]
+    if (
+      ['musicas', 'letra', 'videos', 'fotos', 'discografia', 'agenda'].includes(
+        songSlug.toLowerCase()
+      )
+    ) {
+      return
+    }
+    const key = `${artistSlug}/${songSlug}`
+    if (seen.has(key)) return
+    seen.add(key)
+    items.push({ artistSlug, songSlug, path: key })
+    return undefined
+  })
+
+  return items.slice(0, limit)
+}
+
+function getArtistArg(): string | null {
+  const arg = process.argv.find((a) => a.startsWith('--artist='))
+  if (!arg) return null
+  return arg.split('=')[1]?.trim().replace(/^\/+|\/+$/g, '') || null
+}
+
 type SongPayload = {
   artistName: string
   songTitle: string
@@ -203,7 +254,8 @@ async function upsertSong(payload: SongPayload): Promise<'created' | 'updated'> 
     where: {
       artistId: artist.id,
       OR: [
-        { slug: { contains: payload.songSlug } },
+        { slug: `${slugify(payload.songTitle)}-${artist.slug}` },
+        { slug: `${payload.songSlug}-${artist.slug}` },
         { title: { equals: payload.songTitle, mode: 'insensitive' } }
       ]
     }
@@ -240,6 +292,7 @@ async function upsertSong(payload: SongPayload): Promise<'created' | 'updated'> 
 
 async function main() {
   const single = process.argv.find((a) => a.includes('/') && !a.startsWith('-'))
+  const artistArg = getArtistArg()
   const limit = getLimit()
 
   console.log('Cifra Club → banco local')
@@ -253,10 +306,19 @@ async function main() {
       process.exit(1)
     }
     targets = [{ artistSlug, songSlug, path: `${artistSlug}/${songSlug}` }]
+  } else if (artistArg) {
+    console.log(`Buscando top ${limit} de ${artistArg}…`)
+    targets = await fetchArtistSongPaths(artistArg, limit)
+    console.log('Itens do artista:', targets.length)
   } else {
     console.log('Buscando ranking (limit', limit + ')…')
     targets = await fetchTopPaths(limit)
     console.log('Itens no ranking:', targets.length)
+  }
+
+  if (!targets.length) {
+    console.error('Nenhuma música encontrada.')
+    process.exit(1)
   }
 
   let created = 0

@@ -1,5 +1,2 @@
 User-agent: *
 Allow: /
-
-# AdSense / ads.txt
-Allow: /ads.txt

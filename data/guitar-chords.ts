@@ -91,7 +91,16 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
   Dsus4: chord([-1, -1, 0, 2, 3, 3], '000134'),
   Asus4: chord([-1, 0, 2, 2, 3, 0], '001230'),
   Esus4: chord([0, 2, 2, 2, 0, 0], '023400'),
+  Csus4: chord([-1, 3, 3, 0, 1, 1], '034011'),
+  C4: chord([-1, 3, 3, 0, 1, 1], '034011'),
   Cadd9: chord([-1, 3, 2, 0, 3, 0], '032040'),
+  Fadd9: chord([1, 3, 3, 2, 1, 3], '123114', { barre: true, barreFret: 1 }),
+  F2: chord([1, 3, 3, 2, 1, 3], '123114', { barre: true, barreFret: 1 }),
+  Bbadd9: chord([1, 1, 3, 3, 1, 1], '113411', { barre: true, barreFret: 1 }),
+  Bb2: chord([1, 1, 3, 3, 1, 1], '113411', { barre: true, barreFret: 1 }),
+  Dm9: chord([-1, -1, 0, 2, 1, 0], '000210'),
+  C9: chord([-1, 3, 2, 3, 3, 3], '021333'),
+  Eb: chord([-1, 6, 8, 8, 8, 6], '013331', { barre: true, barreFret: 6 }),
 
   // --- quintas ---
   A5: chord([5, 7, 7, -1, -1, -1], '134000'),
