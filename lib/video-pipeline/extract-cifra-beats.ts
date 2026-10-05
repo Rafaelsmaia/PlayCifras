@@ -15,7 +15,7 @@ export type CifraDisplayLine = {
 }
 
 const SECTION_RE = /^\s*\[.+\]\s*$/
-const TOM_RE = /^\s*Tom:/i
+const TOM_RE = /^\s*(?:Tom:|Capo(?:traste)?\b)/i
 const TAB_RE = /^\s*[EADGBE]\|/i
 
 function splitChordTokens(line: string): string[] {
