@@ -29,10 +29,18 @@ body {
   color: var(--text);
 }
 
+/* Painel baixo (encaixado com outros): o conteúdo desce e rola, nunca é espremido. */
 body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+  display: block;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.panel > *,
+.row > *,
+.field > *,
+.song > * {
+  flex-shrink: 0;
 }
 
 .header {
@@ -66,8 +74,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1;
-  min-height: 0;
 }
 
 .hidden {
@@ -153,7 +159,7 @@ input:focus {
 }
 
 .list {
-  flex: 1;
+  max-height: 320px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -243,10 +249,7 @@ h2 {
 }
 
 .app {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  display: block;
 }
 
 .tabs {
@@ -268,10 +271,6 @@ h2 {
 .tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
-}
-
-.panel {
-  overflow: auto;
 }
 
 .grow {
@@ -382,6 +381,12 @@ textarea {
   gap: 6px;
   padding: 4px 8px;
   border-bottom: 1px solid var(--border);
+}
+
+.mark-row .idx,
+.mark-row .time,
+.mark-row button {
+  flex-shrink: 0;
 }
 
 .mark-row .idx {
