@@ -303,6 +303,24 @@ input[type="number"] {
   width: auto;
 }
 
+textarea {
+  width: 100%;
+  min-height: 60px;
+  background: #121212;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 6px 8px;
+  font-family: Consolas, monospace;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
 .list.compact {
   flex: none;
   min-height: 0;

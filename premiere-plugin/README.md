@@ -49,6 +49,10 @@ Copia `video-shorts/` para `%LOCALAPPDATA%\PlayCifras\render-helper`, instala as
 
 Só contam marcadores da **cor escolhida** (padrão verde, que é a cor do `M`). Troque a cor se usa verde para outras coisas. Marcador com nome de acorde (ex.: `Am`) usa esse nome; um marcador chamado `fim` define quando o card some (sem ele: 4 s após o último).
 
+**Sequência livre**
+
+Em **Acordes de → Sequência livre**, digite os acordes separados por espaço (ex.: `A9 E F#m11/C# D9`) em vez de buscar uma cifra. Com **Repetir a sequência** marcado, ela volta ao início quando acaba — útil para progressões que se repetem. O painel avisa na hora quais acordes não têm diagrama na biblioteca.
+
 **Modo click (BPM)**
 
 Um único marcador no 1º tempo do primeiro acorde + BPM + tempos por acorde. A lista mostra os tempos calculados; ajuste os tempos de cada acorde quando a harmonia não for regular.

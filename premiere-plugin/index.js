@@ -488,6 +488,9 @@ const DG_PREFS = {
   bpm: ['playcifras.dg.bpm', '90'],
   beats: ['playcifras.dg.beats', '4'],
   track: ['playcifras.dg.track', '2'],
+  source: ['playcifras.dg.source', 'song'],
+  free: ['playcifras.dg.free', ''],
+  loop: ['playcifras.dg.loop', '1'],
 }
 const DG_FPS = 30
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
@@ -503,7 +506,10 @@ const COLOR_NAMES = ['verde', 'vermelho', 'roxo', 'laranja', 'amarelo', 'branco'
  */
 const dg = {
   song: null,
+  /** Sequência ativa (da cifra ou livre). */
   sequence: [],
+  songSequence: [],
+  freeTimer: null,
   rows: [],
   endSec: null,
   clickStart: 0,
@@ -549,8 +555,96 @@ function startIndex() {
   return Math.max(0, Math.floor(dgNumber('dg-start', 1)) - 1)
 }
 
+function dgSource() {
+  return $('dg-source').value === 'free' ? 'free' : 'song'
+}
+
+/** Só a sequência livre pode repetir em loop. */
+function dgLoop() {
+  return dgSource() === 'free' && $('dg-loop').checked
+}
+
 function seqChordAt(k) {
-  return dg.sequence[startIndex() + k] || ''
+  const len = dg.sequence.length
+  if (!len) return ''
+  const i = startIndex() + k
+  if (dgLoop()) return dg.sequence[i % len]
+  return dg.sequence[i] || ''
+}
+
+function parseFreeSequence(text) {
+  const tokens = String(text || '').split(/[\s,;|]+/).filter(Boolean)
+  return {
+    chords: tokens.filter((t) => CHORD_RE.test(t)),
+    ignored: tokens.filter((t) => !CHORD_RE.test(t)),
+  }
+}
+
+function updateSequenceBox() {
+  const box = $('dg-song')
+  if (!dg.sequence.length) {
+    box.classList.add('hidden')
+    return
+  }
+  $('dg-song-title').textContent =
+    dgSource() === 'free'
+      ? `Sequência livre — ${dg.sequence.length} acorde(s)`
+      : dg.song
+        ? `${dg.song.title} — ${dg.song.artist}`
+        : ''
+  box.classList.remove('hidden')
+  renderSequence()
+}
+
+function applySource() {
+  const free = dgSource() === 'free'
+  $('dg-song-source').classList.toggle('hidden', free)
+  $('dg-free-source').classList.toggle('hidden', !free)
+  if (free) {
+    dg.sequence = parseFreeSequence($('dg-free').value).chords
+    checkFreeDiagrams()
+  } else {
+    dg.sequence = dg.songSequence
+  }
+  $('dg-start').value = '1'
+  updateSequenceBox()
+  applySequenceToRows()
+}
+
+function onFreeInput() {
+  savePref('free', $('dg-free').value)
+  dg.sequence = parseFreeSequence($('dg-free').value).chords
+  updateSequenceBox()
+  applySequenceToRows()
+  clearTimeout(dg.freeTimer)
+  dg.freeTimer = setTimeout(checkFreeDiagrams, 600)
+}
+
+/** Avisa na hora quais acordes digitados não têm diagrama na biblioteca. */
+async function checkFreeDiagrams() {
+  const info = $('dg-free-info')
+  const { chords, ignored } = parseFreeSequence($('dg-free').value)
+  const notes = []
+  if (ignored.length) notes.push(`Ignorados (não parecem acorde): ${ignored.join(', ')}.`)
+  const unique = Array.from(new Set(chords))
+  if (unique.length) {
+    try {
+      const res = await fetch(`${getSiteUrl()}/api/plugin/chord-shapes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chords: unique }),
+      })
+      const data = await parseJsonResponse(res)
+      if (res.ok && data.missing && data.missing.length) {
+        notes.push(`Sem diagrama (o card mostra só o nome): ${data.missing.join(', ')}.`)
+      } else if (res.ok) {
+        notes.push('Todos os acordes têm diagrama.')
+      }
+    } catch {
+      /* site fora do ar: o render avisa depois */
+    }
+  }
+  info.textContent = notes.join(' ')
 }
 
 function fmtTime(sec) {
@@ -621,10 +715,10 @@ async function loadSong(slug) {
     const data = await parseJsonResponse(res)
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
     dg.song = data
-    dg.sequence = data.sequence || []
+    dg.songSequence = data.sequence || []
+    dg.sequence = dg.songSequence
     $('dg-start').value = '1'
-    $('dg-song-title').textContent = `${data.title} — ${data.artist}`
-    $('dg-song').classList.remove('hidden')
+    updateSequenceBox()
     dgStatus(`${dg.sequence.length} trocas de acorde na cifra`)
     applySequenceToRows()
   } catch (e) {
@@ -637,12 +731,13 @@ function renderSequence() {
   box.innerHTML = ''
   const start = startIndex()
   const used = dg.rows.filter((r) => !r.beyond).length
+  const wrapped = dgLoop() && start + used > dg.sequence.length
   dg.sequence.forEach((chord, i) => {
     const el = document.createElement('span')
     el.className =
       'chip' +
       (i === start ? ' start' : '') +
-      (i >= start && i < start + used ? ' used' : '')
+      (wrapped || (i >= start && i < start + used) ? ' used' : '')
     el.innerHTML = `<small>${i + 1}</small>${escapeHtml(chord)}`
     el.addEventListener('click', () => {
       $('dg-start').value = String(i + 1)
@@ -666,9 +761,17 @@ function applySequenceToRows() {
 
 function buildClickRows() {
   const beats = dgNumber('dg-beats', 4)
-  dg.rows = dg.sequence
-    .slice(startIndex())
-    .map((chord) => ({ t: 0, chord, beats, source: 'seq' }))
+  let count = Math.max(0, dg.sequence.length - startIndex())
+  if (dgLoop() && dg.seqEnd != null && dg.sequence.length) {
+    const chordSec = (beats * 60) / dgNumber('dg-bpm', 90)
+    count = Math.min(500, Math.ceil((dg.seqEnd - dg.clickStart) / chordSec))
+  }
+  dg.rows = Array.from({ length: count }, (_, k) => ({
+    t: 0,
+    chord: seqChordAt(k),
+    beats,
+    source: 'seq',
+  }))
   recalcClick()
 }
 
@@ -831,7 +934,9 @@ async function readMarkers() {
     const seqEnd = await sequenceEndSec(sequence)
 
     if (dgMode() === 'click') {
-      if (!dg.sequence.length) throw new Error('Escolha a cifra para o modo click')
+      if (!dg.sequence.length) {
+        throw new Error('Escolha a cifra ou digite a sequência livre para o modo click')
+      }
       dg.clickStart = markers[0].t
       dg.seqEnd = seqEnd
       buildClickRows()
@@ -910,14 +1015,14 @@ function validateRows() {
   if (empty) {
     warnings.push(
       dg.sequence.length
-        ? `${empty} marcador(es) sem acorde — há mais marcadores que acordes restantes na cifra.`
-        : `${empty} marcador(es) sem acorde — escolha a cifra ou nomeie os marcadores (ex.: Am).`
+        ? `${empty} marcador(es) sem acorde — há mais marcadores que acordes restantes na sequência.`
+        : `${empty} marcador(es) sem acorde — escolha a cifra, digite a sequência livre ou nomeie os marcadores (ex.: Am).`
     )
   }
   if (invalid.length) {
     warnings.push(`Não parece acorde: ${invalid.map((r) => r.chord).join(', ')}`)
   }
-  if (dgMode() === 'manual' && dg.sequence.length && visible.length) {
+  if (dgMode() === 'manual' && !dgLoop() && dg.sequence.length && visible.length) {
     const remaining = dg.sequence.length - startIndex()
     if (!empty && visible.length < remaining) {
       const next = seqChordAt(visible.length)
@@ -983,7 +1088,7 @@ async function renderDiagramsAndPlace() {
           marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
           endSec: dg.endSec,
           fps: DG_FPS,
-          slug: dg.song ? dg.song.slug : undefined,
+          slug: dgSource() === 'free' ? 'sequencia-livre' : dg.song ? dg.song.slug : undefined,
           siteUrl: getSiteUrl(),
         }),
       })
@@ -1061,7 +1166,21 @@ function wireDiagrams() {
   $('dg-bpm').value = loadPref('bpm')
   $('dg-beats').value = loadPref('beats')
   $('dg-track').value = loadPref('track')
+  $('dg-source').value = loadPref('source')
+  $('dg-free').value = loadPref('free')
+  $('dg-loop').checked = loadPref('loop') === '1'
   updateModeUi()
+  applySource()
+
+  $('dg-source').addEventListener('change', () => {
+    savePref('source', dgSource())
+    applySource()
+  })
+  $('dg-free').addEventListener('input', () => onFreeInput())
+  $('dg-loop').addEventListener('change', () => {
+    savePref('loop', $('dg-loop').checked ? '1' : '0')
+    applySequenceToRows()
+  })
 
   $('tab-diagrams').addEventListener('click', () => switchTab('diagrams'))
   $('tab-shorts').addEventListener('click', () => switchTab('shorts'))

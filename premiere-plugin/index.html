@@ -49,10 +49,32 @@
 
       <section id="view-diagrams" class="panel">
         <label class="field">
-          Cifra
-          <input id="dg-search" type="search" placeholder="Buscar música…" autocomplete="off" />
+          Acordes de
+          <select id="dg-source">
+            <option value="song">Cifra do site</option>
+            <option value="free">Sequência livre</option>
+          </select>
         </label>
-        <div id="dg-results" class="list compact hidden" role="list"></div>
+
+        <div id="dg-song-source">
+          <label class="field">
+            Cifra
+            <input id="dg-search" type="search" placeholder="Buscar música…" autocomplete="off" />
+          </label>
+          <div id="dg-results" class="list compact hidden" role="list"></div>
+        </div>
+
+        <div id="dg-free-source" class="hidden">
+          <label class="field">
+            Sequência (separe os acordes por espaço)
+            <textarea id="dg-free" rows="3" placeholder="A9 E F#m11/C# D9"></textarea>
+          </label>
+          <label class="check">
+            <input id="dg-loop" type="checkbox" checked />
+            Repetir a sequência quando acabar
+          </label>
+          <p id="dg-free-info" class="hint"></p>
+        </div>
 
         <div id="dg-song" class="song hidden">
           <h2 id="dg-song-title"></h2>
