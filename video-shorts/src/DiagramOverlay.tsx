@@ -244,7 +244,7 @@ export const DiagramOverlayComposition: React.FC<DiagramOverlayProps> = (props) 
     )
   }
 
-  /** Número do dedo vazado na bolinha (máscara), como no PNG do site invertido. */
+  /** Número do dedo em preto sólido sobre a bolinha (vazado deixaria a corda aparecer por dentro). */
   const fingerLabel = (finger: number, op: number, key: string) =>
     finger > 0 && op > 0.001 ? (
       <text
@@ -266,7 +266,6 @@ export const DiagramOverlayComposition: React.FC<DiagramOverlayProps> = (props) 
   const dotsB = dotsOf(next)
   const keys = Array.from(new Set([...dotsA, ...dotsB].map((d) => d.key)))
   const dotCircles: React.ReactNode[] = []
-  const dotLabels: React.ReactNode[] = []
   for (const key of keys) {
     const a = dotsA.find((d) => d.key === key)
     const z = dotsB.find((d) => d.key === key)
@@ -294,10 +293,6 @@ export const DiagramOverlayComposition: React.FC<DiagramOverlayProps> = (props) 
     dotCircles.push(
       <g key={`dot-${key}`} transform={transform} opacity={opacity}>
         <circle r={rDot} fill={OVERLAY_INK} />
-      </g>
-    )
-    dotLabels.push(
-      <g key={`lbl-${key}`} transform={transform}>
         {!a || !z || fingerA === fingerB
           ? fingerLabel(z ? fingerB : fingerA, 1, 'f')
           : [fingerLabel(fingerA, 1 - e, 'fa'), fingerLabel(fingerB, e, 'fb')]}
@@ -373,10 +368,6 @@ export const DiagramOverlayComposition: React.FC<DiagramOverlayProps> = (props) 
             <stop offset={pct(gridBottom)} stopColor={OVERLAY_INK} stopOpacity={1} />
             <stop offset="100%" stopColor={OVERLAY_INK} stopOpacity={0} />
           </linearGradient>
-          <mask id="finger-cut" maskUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>
-            <rect x={0} y={0} width={width} height={height} fill="#fff" />
-            {dotLabels}
-          </mask>
         </defs>
         <g
           opacity={alpha}
@@ -428,7 +419,7 @@ export const DiagramOverlayComposition: React.FC<DiagramOverlayProps> = (props) 
             : [renderBaseFret(prev, 1 - e, 'bfa'), renderBaseFret(next, e, 'bfb')]}
           {statuses}
           {barres}
-          <g mask="url(#finger-cut)">{dotCircles}</g>
+          {dotCircles}
         </g>
       </svg>
     </AbsoluteFill>

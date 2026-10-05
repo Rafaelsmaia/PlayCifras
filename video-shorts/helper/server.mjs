@@ -14,7 +14,7 @@ import { ensureBrowser, renderMedia, selectComposition } from '@remotion/rendere
 
 const HELPER_VERSION = 2
 /** Mude quando o visual da composição mudar (invalida o cache). */
-const RENDER_VERSION = 4
+const RENDER_VERSION = 5
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
 const DEFAULT_SITE = 'https://playcifras.vercel.app'
 /** Tempo antes do 1º marcador para o card entrar. */
