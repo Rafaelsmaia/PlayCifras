@@ -8,7 +8,7 @@ import { getSongBySlug } from '@/lib/get-song-by-slug'
 import { normalizeArtistImage } from '@/lib/artist-image'
 import { resolveDynamicParams } from '@/lib/route-params'
 
-const getCachedSongBySlug = unstable_cache(getSongBySlug, ['cifra-song-by-slug-v11'], {
+const getCachedSongBySlug = unstable_cache(getSongBySlug, ['cifra-song-by-slug-v12'], {
   revalidate: 60 * 60
 })
 
