@@ -102,6 +102,7 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
   A2: chord([-1, 0, 2, 2, 0, 0], '002300'),
   A9: chord([-1, 0, 2, 2, 0, 0], '002300'),
   Dadd9: chord([-1, -1, 0, 2, 3, 0], '000130'),
+  D9: chord([-1, -1, 0, 2, 3, 0], '000130'),
   'F#m11/C#': chord([-1, 4, 4, 2, 0, 0], '034100'),
   Dm9: chord([-1, -1, 0, 2, 1, 0], '000210'),
   C9: chord([-1, 3, 2, 3, 3, 3], '021333'),
