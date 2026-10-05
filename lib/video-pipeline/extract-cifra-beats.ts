@@ -31,8 +31,14 @@ function splitChordTokens(line: string): string[] {
     .filter((t) => t.length > 0 && isChordToken(t))
 }
 
+/** Parênteses, barras de compasso e marcas de repetição em linhas de passagem: "( D9  E5 )", "| A | E |", "(2x)". */
+const CHORD_LINE_FILLER_RE = /^(?:[()[\]|\-–.,:*/]+|\(?\d+x\)?)$/i
+
 function isMostlyChords(line: string): boolean {
-  const tokens = line.trim().split(/\s+/).filter(Boolean)
+  const tokens = line
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t && !CHORD_LINE_FILLER_RE.test(t))
   if (tokens.length === 0) return false
   // Linha só de [Am] [C] etc.
   if (/^\s*(\[[^\]]+\]\s*)+$/.test(line)) return true
