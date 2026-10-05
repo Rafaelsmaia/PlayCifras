@@ -1,25 +1,44 @@
 import React from 'react'
 import { Composition } from 'remotion'
-import {
-  DIAGRAM_OVERLAY_DEMO,
-  DIAGRAM_OVERLAY_HEIGHT,
-  DIAGRAM_OVERLAY_WIDTH,
-  DiagramOverlayComposition,
-} from './DiagramOverlay'
-import type { DiagramOverlayProps } from './diagram-overlay-types'
+import { DIAGRAM_OVERLAY_DEMO, DiagramOverlayComposition } from './DiagramOverlay'
+import { LYRICS_OVERLAY_DEMO, LyricsOverlayComposition } from './LyricsOverlay'
+import type { DiagramOverlayProps, LyricsOverlayProps } from './diagram-overlay-types'
+import { frameOf } from './overlay-layout'
+
+/** ProRes exige dimensões pares. */
+const even = (n: number) => Math.max(2, Math.round(n / 2) * 2)
+
+function metadataOf(props: { durationSec: number; fps: number; width?: number; height?: number }) {
+  const { width, height } = frameOf(props)
+  return {
+    fps: props.fps,
+    durationInFrames: Math.max(1, Math.round(props.durationSec * props.fps)),
+    width: even(width),
+    height: even(height),
+  }
+}
 
 export const DiagramOverlayEntry: React.FC = () => (
-  <Composition
-    id="DiagramOverlay"
-    component={DiagramOverlayComposition}
-    durationInFrames={Math.round(DIAGRAM_OVERLAY_DEMO.durationSec * DIAGRAM_OVERLAY_DEMO.fps)}
-    fps={DIAGRAM_OVERLAY_DEMO.fps}
-    width={DIAGRAM_OVERLAY_WIDTH}
-    height={DIAGRAM_OVERLAY_HEIGHT}
-    defaultProps={DIAGRAM_OVERLAY_DEMO}
-    calculateMetadata={({ props }: { props: DiagramOverlayProps }) => ({
-      fps: props.fps,
-      durationInFrames: Math.max(1, Math.round(props.durationSec * props.fps)),
-    })}
-  />
+  <>
+    <Composition
+      id="DiagramOverlay"
+      component={DiagramOverlayComposition}
+      durationInFrames={Math.round(DIAGRAM_OVERLAY_DEMO.durationSec * DIAGRAM_OVERLAY_DEMO.fps)}
+      fps={DIAGRAM_OVERLAY_DEMO.fps}
+      width={1080}
+      height={1920}
+      defaultProps={DIAGRAM_OVERLAY_DEMO}
+      calculateMetadata={({ props }: { props: DiagramOverlayProps }) => metadataOf(props)}
+    />
+    <Composition
+      id="LyricsOverlay"
+      component={LyricsOverlayComposition}
+      durationInFrames={Math.round(LYRICS_OVERLAY_DEMO.durationSec * LYRICS_OVERLAY_DEMO.fps)}
+      fps={LYRICS_OVERLAY_DEMO.fps}
+      width={1080}
+      height={1920}
+      defaultProps={LYRICS_OVERLAY_DEMO}
+      calculateMetadata={({ props }: { props: LyricsOverlayProps }) => metadataOf(props)}
+    />
+  </>
 )

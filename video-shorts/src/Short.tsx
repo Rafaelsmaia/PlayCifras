@@ -43,7 +43,7 @@ export const CIFRA_VIDEO_FONT = 'Proxima Soft'
 
 let fontPromise: Promise<void> | null = null
 
-function ensureProximaSoft(): Promise<void> {
+export function ensureProximaSoft(): Promise<void> {
   if (fontPromise) return fontPromise
   fontPromise = (async () => {
     if (typeof document === 'undefined') return

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/database'
-import { extractChordSequence } from '@/lib/video-pipeline/extract-cifra-beats'
+import { extractChordSequence, extractLyricLines } from '@/lib/video-pipeline/extract-cifra-beats'
 
 export const dynamic = 'force-dynamic'
 
 type Ctx = { params: { slug: string } }
 
-/** GET /api/plugin/songs/:slug/chords — acordes da cifra na ordem tocada. */
+/** GET /api/plugin/songs/:slug/chords — acordes na ordem tocada + letra com acordes por sílaba. */
 export async function GET(_req: Request, { params }: Ctx) {
   const slug = decodeURIComponent(params.slug)
   try {
@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       artist: song.artist.name,
       key: song.key,
       sequence: extractChordSequence(song.content),
+      lines: extractLyricLines(song.content),
     })
   } catch (e) {
     return NextResponse.json(

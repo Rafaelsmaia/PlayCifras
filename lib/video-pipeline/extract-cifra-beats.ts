@@ -184,6 +184,103 @@ export function extractChordSequence(content: string): string[] {
   return out
 }
 
+export type LyricChord = {
+  chord: string
+  /** Índice do caractere da letra (já sem espaços à esquerda) sobre o qual o acorde fica. */
+  at: number
+}
+
+export type LyricLine = {
+  text: string
+  chords: LyricChord[]
+  /** Começa estrofe nova (linha vazia ou [Parte] antes). */
+  breakBefore: boolean
+}
+
+/** Acordes de uma linha só de acordes, com a coluna onde cada um começa. */
+function chordColumns(line: string): LyricChord[] {
+  const out: LyricChord[] = []
+  const bracketRe = /\[([^\]]+)\]/g
+  if (/\[[^\]]+\]/.test(line)) {
+    let m: RegExpExecArray | null
+    while ((m = bracketRe.exec(line)) !== null) {
+      // O site esconde os colchetes mas mantém a largura: o nome começa 1 coluna depois.
+      if (isChordToken(m[1])) out.push({ chord: m[1].trim(), at: m.index + 1 })
+    }
+    return out
+  }
+  const tokenRe = /\S+/g
+  let m: RegExpExecArray | null
+  while ((m = tokenRe.exec(line)) !== null) {
+    if (isChordToken(m[0])) out.push({ chord: m[0], at: m.index })
+  }
+  return out
+}
+
+/** Acordes entre colchetes no meio da letra (ex.: "Aqui[Am]eta"). */
+function splitInlineChords(line: string): { text: string; chords: LyricChord[] } {
+  const chords: LyricChord[] = []
+  let text = ''
+  let last = 0
+  const re = /\[([^\]]+)\]/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(line)) !== null) {
+    if (!isChordToken(m[1])) continue
+    text += line.slice(last, m.index)
+    chords.push({ chord: m[1].trim(), at: text.length })
+    last = m.index + m[0].length
+  }
+  text += line.slice(last)
+  return { text, chords }
+}
+
+/**
+ * Linhas de letra com cada acorde preso à sílaba de baixo — base do overlay de letra.
+ * Linhas só de acordes sem letra embaixo (intro, solo) ficam de fora.
+ */
+export function extractLyricLines(content: string): LyricLine[] {
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
+  const out: LyricLine[] = []
+  let pending: LyricChord[] | null = null
+  let breakNext = true
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '')
+    const trimmed = line.trim()
+    if (!raw.length) {
+      pending = null
+      breakNext = true
+      continue
+    }
+    if (!trimmed || TOM_RE.test(trimmed) || TAB_RE.test(trimmed)) continue
+    if (SECTION_RE.test(trimmed)) {
+      pending = null
+      breakNext = true
+      continue
+    }
+    if (isMostlyChords(trimmed)) {
+      pending = chordColumns(line)
+      continue
+    }
+    if (!isLyricLine(trimmed)) continue
+
+    const inline = splitInlineChords(line)
+    const lead = inline.text.length - inline.text.trimStart().length
+    const text = inline.text.trim()
+    const chords = [
+      ...(pending || []).map((c) => ({ chord: c.chord, at: c.at - lead })),
+      ...inline.chords.map((c) => ({ chord: c.chord, at: c.at - lead })),
+    ]
+      .map((c) => ({ chord: c.chord, at: Math.min(text.length, Math.max(0, c.at)) }))
+      .sort((a, b) => a.at - b.at)
+
+    out.push({ text, chords, breakBefore: breakNext })
+    pending = null
+    breakNext = false
+  }
+  return out
+}
+
 export function uniqueChordsFromBeats(beats: CifraBeat[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []

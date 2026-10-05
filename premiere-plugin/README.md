@@ -27,7 +27,7 @@ Sem áudio no overlay — o áudio é o do seu vídeo.
 
 ## Aba Diagramas (troca animada de acordes)
 
-Card transparente (600×780, ProRes 4444 alpha, sem áudio) com o diagrama trocando no tempo da música: cada dedo desliza até a nova posição, pestana e casa base acompanham. Não precisa de short preparado — os tempos vêm dos marcadores da sua sequência.
+Overlay transparente (ProRes 4444 alpha, sem áudio, do tamanho da sequência) com o diagrama no desenho do gerador do site — branco, cordas em degradê embaixo, número do dedo vazado — trocando no tempo da música: cada dedo desliza até a nova posição, pestana e casa base acompanham. Já sai à direita, na posição dos vídeos PlayCifras. Não precisa de short preparado — os tempos vêm dos marcadores da sua sequência.
 
 **Não precisa de `npm run dev`.** Cifras e digitações vêm do site no ar; o vídeo é renderizado pelo **ajudante de render**, um processo invisível que abre com o Windows.
 
@@ -57,7 +57,19 @@ Em **Acordes de → Sequência livre**, digite os acordes separados por espaço 
 
 Um único marcador no 1º tempo do primeiro acorde + BPM + tempos por acorde. A lista mostra os tempos calculados; ajuste os tempos de cada acorde quando a harmonia não for regular.
 
-Dicas: escale/posicione o card com **Movimento** no Premiere. A trilha escolhida é sobrescrita no trecho — use uma trilha livre. Mesmos marcadores = cache (não renderiza de novo).
+Dicas: para mudar a posição, use **Movimento** no Premiere. A trilha escolhida é sobrescrita no trecho — use uma trilha livre. Mesmos marcadores = cache (não renderiza de novo).
+
+## Aba Letra (letra com cifras)
+
+Overlay transparente com a letra em telas de 1–3 linhas, acordes em magenta sobre a sílaba (fonte Proxima Soft), à esquerda do diagrama. Usa a mesma cifra buscada no topo do painel e marcadores de **outra cor** (padrão azul), porque a letra e os acordes nem sempre trocam juntos.
+
+1. Uma vez: **Editar › Atalhos do teclado**, busque "marcador" e dê uma tecla a **Adicionar marcador azul**.
+2. Toque a música e aperte essa tecla em cada troca de tela da letra.
+3. Aba **Letra** → clique na linha onde o trecho começa → **Ler marcadores**.
+4. Na lista, `−`/`+` mudam quantas linhas cada tela pega (as seguintes se ajustam); `×` remove o marcador.
+5. **Gerar letra e colocar na timeline** (padrão V3, acima dos diagramas).
+
+Marcador chamado `pausa` limpa a tela (trecho instrumental); `fim` define quando a letra some. **Quebrar linhas longas** divide linhas com mais de 28 caracteres em duas, que ficam sempre na mesma tela.
 
 ## Fluxo diário (Shorts)
 
@@ -95,9 +107,10 @@ Dicas: escale/posicione o card com **Movimento** no Premiere. A trilha escolhida
 | `POST /api/plugin/shorts/:slug/render-overlay` | Gera/cache `exports/shorts/<slug>/overlay.mov` |
 | `GET /api/plugin/shorts/:slug/overlay?meta=1` | Path do overlay |
 | `GET /api/plugin/shorts/:slug/package?format=json` | Pacote SRT/PNG |
-| `GET /api/plugin/songs/:slug/chords` | Sequência de acordes da cifra (ordem tocada) |
+| `GET /api/plugin/songs/:slug/chords` | Sequência de acordes da cifra (ordem tocada) + `lines` (letra com `{chord, at}` por sílaba) |
 | `POST /api/plugin/chord-shapes` | `{ chords }` → digitações prontas para a composição (usado pelo ajudante) |
-| Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl }` → `.mov` + `startSec` |
+| Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl, width, height }` → `.mov` + `startSec` |
+| Ajudante `POST http://127.0.0.1:3917/render-lyrics` | `{ screens: [{t, lines}], endSec, width, height }` → `.mov` + `startSec` |
 
 ## CLI
 

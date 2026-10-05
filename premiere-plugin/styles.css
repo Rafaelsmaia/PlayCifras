@@ -411,6 +411,74 @@ textarea {
   border-color: var(--danger);
 }
 
+.panel.slim {
+  flex: none;
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+.song-current {
+  margin: 4px 0 0;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.lines {
+  max-height: 160px;
+  overflow: auto;
+  margin: 4px 0;
+}
+
+.line {
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.line small {
+  color: var(--muted);
+  width: 22px;
+  text-align: right;
+  flex: none;
+}
+
+.line.break {
+  margin-top: 6px;
+}
+
+.line.start {
+  outline: 1px solid var(--accent);
+}
+
+.line.used {
+  background: #2c2410;
+}
+
+.mark-row .text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mark-row .text.pause {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.mark-row .step {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+}
+
 .mark-row .del {
   background: transparent;
   border: none;

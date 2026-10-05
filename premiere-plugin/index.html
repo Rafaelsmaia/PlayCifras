@@ -29,7 +29,7 @@
         <input id="api-url" type="text" placeholder="http://localhost:3000" />
       </label>
       <p class="hint">
-        A aba Diagramas usa o site no ar e o ajudante de render instalado neste
+        As abas Diagramas e Letra usam o site no ar e o ajudante de render instalado neste
         PC (<code>npm run helper:install</code>). A aba Shorts ainda precisa do
         <code>npm run dev</code>.
       </p>
@@ -44,11 +44,12 @@
     <div id="view-app" class="app">
       <nav class="tabs">
         <button type="button" id="tab-diagrams" class="tab active">Diagramas</button>
+        <button type="button" id="tab-lyrics" class="tab">Letra</button>
         <button type="button" id="tab-shorts" class="tab">Shorts</button>
       </nav>
 
-      <section id="view-diagrams" class="panel">
-        <label class="field">
+      <section id="song-block" class="panel slim">
+        <label id="dg-source-field" class="field">
           Acordes de
           <select id="dg-source">
             <option value="song">Cifra do site</option>
@@ -62,8 +63,11 @@
             <input id="dg-search" type="search" placeholder="Buscar música…" autocomplete="off" />
           </label>
           <div id="dg-results" class="list compact hidden" role="list"></div>
+          <p id="song-current" class="song-current hidden"></p>
         </div>
+      </section>
 
+      <section id="view-diagrams" class="panel">
         <div id="dg-free-source" class="hidden">
           <label class="field">
             Sequência (separe os acordes por espaço)
@@ -139,6 +143,68 @@
 
         <button type="button" id="dg-render" class="btn primary" disabled>
           Gerar animação e colocar na timeline
+        </button>
+      </section>
+
+      <section id="view-lyrics" class="panel hidden">
+        <div id="ly-song" class="song hidden">
+          <h2 id="ly-title"></h2>
+          <div id="ly-lines" class="lines"></div>
+          <p class="hint">Clique na linha onde o seu trecho começa.</p>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Cor do marcador
+            <select id="ly-color">
+              <option value="0">Verde (padrão do M)</option>
+              <option value="1">Vermelho</option>
+              <option value="2">Roxo</option>
+              <option value="3">Laranja</option>
+              <option value="4">Amarelo</option>
+              <option value="5">Branco</option>
+              <option value="6">Azul</option>
+              <option value="7">Ciano</option>
+            </select>
+          </label>
+          <label class="field grow">
+            Linhas por tela
+            <select id="ly-per">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Começar na linha nº
+            <input id="ly-start" type="number" min="1" value="1" />
+          </label>
+          <label class="field grow">
+            Trilha de vídeo
+            <input id="ly-track" type="number" min="1" max="20" value="3" />
+          </label>
+        </div>
+
+        <label class="check">
+          <input id="ly-split" type="checkbox" checked />
+          Quebrar linhas longas em duas
+        </label>
+
+        <p id="ly-hint" class="hint"></p>
+
+        <div class="row tight">
+          <button type="button" id="ly-read" class="btn">Ler marcadores</button>
+          <span id="ly-status" class="status"></span>
+        </div>
+
+        <p id="ly-warning" class="warning hidden"></p>
+        <div id="ly-rows" class="list rows hidden"></div>
+
+        <button type="button" id="ly-render" class="btn primary" disabled>
+          Gerar letra e colocar na timeline
         </button>
       </section>
 

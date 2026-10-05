@@ -15,8 +15,30 @@ export type DiagramMark = {
 
 export type DiagramOverlayProps = {
   marks: DiagramMark[]
-  /** Acordes sem digitação na biblioteca ficam fora (card mostra só o nome). */
+  /** Acordes sem digitação na biblioteca ficam fora (só o nome aparece). */
   shapes: Record<string, DiagramShape>
   durationSec: number
   fps: number
+  /** Tamanho da sequência do Premiere; o diagrama já sai na posição do vídeo. */
+  width?: number
+  height?: number
+}
+
+export type LyricChord = { chord: string; at: number }
+
+export type LyricOverlayLine = { text: string; chords: LyricChord[] }
+
+export type LyricScreen = {
+  /** Segundos desde o início do overlay. */
+  t: number
+  /** Vazio = tela limpa (pausa instrumental). */
+  lines: LyricOverlayLine[]
+}
+
+export type LyricsOverlayProps = {
+  screens: LyricScreen[]
+  durationSec: number
+  fps: number
+  width?: number
+  height?: number
 }

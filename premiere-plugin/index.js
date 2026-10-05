@@ -1,6 +1,7 @@
 /**
  * Painel UXP PlayCifras para Adobe Premiere (25.6+).
  * Diagramas: troca animada de acordes cronometrada por marcadores (ou BPM).
+ * Letra: telas de letra com cifras, trocadas por marcadores de outra cor.
  * Shorts: overlay Remotion (ProRes alpha) na timeline + pacote SRT/PNG.
  */
 const uxp = require('uxp')
@@ -491,7 +492,13 @@ const DG_PREFS = {
   source: ['playcifras.dg.source', 'song'],
   free: ['playcifras.dg.free', ''],
   loop: ['playcifras.dg.loop', '1'],
+  lyColor: ['playcifras.ly.color', '6'],
+  lyPer: ['playcifras.ly.per', '2'],
+  lyTrack: ['playcifras.ly.track', '3'],
+  lySplit: ['playcifras.ly.split', '1'],
 }
+/** Ajudante com /render-lyrics e quadro do tamanho da sequência. */
+const HELPER_MIN_VERSION = 2
 const DG_FPS = 30
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
 const DG_TAIL_SEC = 4
@@ -515,6 +522,7 @@ const dg = {
   clickStart: 0,
   seqEnd: null,
   searchTimer: null,
+  tab: 'diagrams',
 }
 
 function loadPref(key) {
@@ -596,9 +604,20 @@ function updateSequenceBox() {
   renderSequence()
 }
 
+/** Busca de cifra é comum às abas Diagramas (se não for sequência livre) e Letra. */
+function updateSongBlock() {
+  const tab = dg.tab
+  $('song-block').classList.toggle('hidden', tab === 'shorts')
+  $('dg-source-field').classList.toggle('hidden', tab !== 'diagrams')
+  $('dg-song-source').classList.toggle('hidden', tab === 'diagrams' && dgSource() === 'free')
+  const current = $('song-current')
+  current.textContent = dg.song ? `${dg.song.title} — ${dg.song.artist}` : ''
+  current.classList.toggle('hidden', !dg.song)
+}
+
 function applySource() {
   const free = dgSource() === 'free'
-  $('dg-song-source').classList.toggle('hidden', free)
+  updateSongBlock()
   $('dg-free-source').classList.toggle('hidden', !free)
   if (free) {
     dg.sequence = parseFreeSequence($('dg-free').value).chords
@@ -654,12 +673,17 @@ function fmtTime(sec) {
 }
 
 function switchTab(name) {
-  const diagrams = name === 'diagrams'
-  $('tab-diagrams').classList.toggle('active', diagrams)
-  $('tab-shorts').classList.toggle('active', !diagrams)
-  $('view-diagrams').classList.toggle('hidden', !diagrams)
-  $('view-main').classList.toggle('hidden', diagrams)
-  if (!diagrams && !shorts.length) fetchShorts()
+  dg.tab = name
+  for (const [tab, view] of [
+    ['diagrams', 'view-diagrams'],
+    ['lyrics', 'view-lyrics'],
+    ['shorts', 'view-main'],
+  ]) {
+    $(`tab-${tab}`).classList.toggle('active', tab === name)
+    $(view).classList.toggle('hidden', tab !== name)
+  }
+  updateSongBlock()
+  if (name === 'shorts' && !shorts.length) fetchShorts()
 }
 
 function updateModeUi() {
@@ -716,11 +740,13 @@ async function loadSong(slug) {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
     dg.song = data
     dg.songSequence = data.sequence || []
-    dg.sequence = dg.songSequence
+    if (dgSource() === 'song') dg.sequence = dg.songSequence
     $('dg-start').value = '1'
+    updateSongBlock()
     updateSequenceBox()
-    dgStatus(`${dg.sequence.length} trocas de acorde na cifra`)
+    dgStatus(`${dg.songSequence.length} trocas de acorde na cifra`)
     applySequenceToRows()
+    setLyricLines(data.lines)
   } catch (e) {
     dgStatus(`Falha: ${e.message || e}`)
   }
@@ -1069,6 +1095,71 @@ async function findItemByName(folder, name) {
   return null
 }
 
+/** Tamanho do quadro da sequência: o overlay já sai na posição certa do vídeo. */
+async function frameSizeOf(sequence) {
+  try {
+    const rect = await sequence.getFrameSize()
+    const width = Math.round(Number(rect && rect.width))
+    const height = Math.round(Number(rect && rect.height))
+    if (width > 0 && height > 0) return { width, height }
+  } catch {
+    /* Premiere sem getFrameSize */
+  }
+  return { width: 1080, height: 1920 }
+}
+
+/** POST no ajudante de render; traduz ajudante parado/antigo em instruções. */
+async function callHelper(route, body) {
+  let res
+  try {
+    res = await fetch(`${getHelperUrl()}${route}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error(HELPER_OFFLINE_MSG)
+  }
+  const data = await parseJsonResponse(res)
+  if (res.status === 404) throw new Error(HELPER_OUTDATED_MSG)
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+  return data
+}
+
+/** Importa o .mov e coloca em `trackIndex` no início do overlay. Devolve o texto de status. */
+async function placeRendered(project, sequence, data, trackIndex, label) {
+  let insertionBin = null
+  try {
+    insertionBin = await project.getInsertionBin()
+  } catch {
+    insertionBin = null
+  }
+  const imported = await project.importFiles([data.overlayPath], true, insertionBin, false)
+  if (!imported) throw new Error('Falha ao importar o .mov')
+
+  const projectItem =
+    (insertionBin && (await findItemByName(insertionBin, data.fileName))) ||
+    (await findItemByName(await project.getRootItem(), data.fileName))
+  if (!projectItem) return `${data.fileName} está no bin — arraste para ${fmtTime(data.startSec)}.`
+
+  const editor = premierepro.SequenceEditor.getEditor(sequence)
+  let ok = false
+  project.lockedAccess(() => {
+    ok = project.executeTransaction((compoundAction) => {
+      compoundAction.addAction(
+        editor.createOverwriteItemAction(
+          projectItem,
+          secondsToTickTime(data.startSec),
+          trackIndex,
+          0
+        )
+      )
+    }, `PlayCifras ${label}`)
+  })
+  if (!ok) return `No bin — não coube em V${trackIndex + 1}; arraste para ${fmtTime(data.startSec)}.`
+  return null
+}
+
 async function renderDiagramsAndPlace() {
   if (busy) return
   const visible = dg.rows.filter((r) => !r.beyond && r.chord)
@@ -1079,62 +1170,19 @@ async function renderDiagramsAndPlace() {
   try {
     const { project, sequence } = await getActiveSequence()
     dgStatus('Renderizando animação (pode demorar)…')
-    let res
-    try {
-      res = await fetch(`${getHelperUrl()}/render-diagrams`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
-          endSec: dg.endSec,
-          fps: DG_FPS,
-          slug: dgSource() === 'free' ? 'sequencia-livre' : dg.song ? dg.song.slug : undefined,
-          siteUrl: getSiteUrl(),
-        }),
-      })
-    } catch {
-      throw new Error(HELPER_OFFLINE_MSG)
-    }
-    const data = await parseJsonResponse(res)
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+    const data = await callHelper('/render-diagrams', {
+      marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
+      endSec: dg.endSec,
+      fps: DG_FPS,
+      slug: dgSource() === 'free' ? 'sequencia-livre' : dg.song ? dg.song.slug : undefined,
+      siteUrl: getSiteUrl(),
+      ...(await frameSizeOf(sequence)),
+    })
 
     dgStatus(data.cached ? 'Cache OK — importando…' : 'Render OK — importando…')
-    let insertionBin = null
-    try {
-      insertionBin = await project.getInsertionBin()
-    } catch {
-      insertionBin = null
-    }
-    const imported = await project.importFiles([data.overlayPath], true, insertionBin, false)
-    if (!imported) throw new Error('Falha ao importar o .mov')
-
-    const projectItem =
-      (insertionBin && (await findItemByName(insertionBin, data.fileName))) ||
-      (await findItemByName(await project.getRootItem(), data.fileName))
-    if (!projectItem) {
-      dgStatus(`${data.fileName} está no bin — arraste para ${fmtTime(data.startSec)}.`)
-      return
-    }
-
     const trackIndex = Math.max(0, Math.floor(dgNumber('dg-track', 2)) - 1)
-    const editor = premierepro.SequenceEditor.getEditor(sequence)
-    let ok = false
-    project.lockedAccess(() => {
-      ok = project.executeTransaction((compoundAction) => {
-        compoundAction.addAction(
-          editor.createOverwriteItemAction(
-            projectItem,
-            secondsToTickTime(data.startSec),
-            trackIndex,
-            0
-          )
-        )
-      }, 'PlayCifras diagramas')
-    })
-    if (!ok) {
-      dgStatus(`No bin — não coube em V${trackIndex + 1}; arraste para ${fmtTime(data.startSec)}.`)
-      return
-    }
+    const fallback = await placeRendered(project, sequence, data, trackIndex, 'diagramas')
+    if (fallback) return dgStatus(fallback)
 
     const missing = data.missingChords && data.missingChords.length
       ? ` · sem digitação: ${data.missingChords.join(', ')}`
@@ -1148,15 +1196,327 @@ async function renderDiagramsAndPlace() {
   }
 }
 
+/* ---------- Letra com cifras ---------- */
+
+/** Linhas maiores que isso viram duas (como "Ainda que a figueira / não floresça"). */
+const LY_SPLIT_AT = 28
+const PAUSE_RE = /^(pausa|pause|-)$/i
+
+/**
+ * rawLines: linhas da cifra ({ text, chords: [{ chord, at }], breakBefore }).
+ * lines: as mesmas, já quebradas se "Quebrar linhas longas" estiver ligado.
+ * rows: { t, pause, count (null = automático), first, lines }.
+ */
+const ly = {
+  rawLines: [],
+  lines: [],
+  rows: [],
+  endSec: null,
+  used: 0,
+}
+
+function lyStatus(msg) {
+  $('ly-status').textContent = msg || ''
+}
+
+function lyColor() {
+  return Number($('ly-color').value) || 0
+}
+
+function lyPerScreen() {
+  return Math.min(3, Math.max(1, Number($('ly-per').value) || 2))
+}
+
+function lyStart() {
+  return Math.max(0, Math.floor(dgNumber('ly-start', 1)) - 1)
+}
+
+/** Quebra no espaço mais perto do meio; cada acorde vai junto com a sua sílaba. */
+function splitLongLine(line) {
+  const text = line.text
+  if (text.length <= LY_SPLIT_AT) return [line]
+  let cut = -1
+  for (let i = 1; i < text.length - 1; i++) {
+    if (text[i] !== ' ') continue
+    if (cut < 0 || Math.abs(i - text.length / 2) < Math.abs(cut - text.length / 2)) cut = i
+  }
+  if (cut < 0) return [line]
+  const first = {
+    text: text.slice(0, cut),
+    chords: line.chords
+      .filter((c) => c.at <= cut)
+      .map((c) => ({ chord: c.chord, at: Math.min(c.at, cut) })),
+    breakBefore: line.breakBefore,
+  }
+  const second = {
+    text: text.slice(cut + 1),
+    chords: line.chords
+      .filter((c) => c.at > cut)
+      .map((c) => ({ chord: c.chord, at: c.at - cut - 1 })),
+    breakBefore: false,
+  }
+  return [...splitLongLine(first), ...splitLongLine(second)]
+}
+
+/** `group` = linha original da cifra: as metades de uma linha quebrada ficam na mesma tela. */
+function prepareLyricLines() {
+  const split = $('ly-split').checked
+  ly.lines = ly.rawLines.flatMap((line, group) =>
+    (split ? splitLongLine(line) : [line]).map((part) => Object.assign({}, part, { group }))
+  )
+}
+
+function setLyricLines(lines) {
+  ly.rawLines = Array.isArray(lines) ? lines : []
+  $('ly-start').value = '1'
+  prepareLyricLines()
+  assignLyricRows()
+  renderLyricRows()
+  updateLyricHint()
+  lyStatus(
+    Array.isArray(lines)
+      ? `${ly.rawLines.length} linhas de letra`
+      : 'O site ainda não devolve a letra — aguarde o deploy e recarregue a cifra.'
+  )
+}
+
+/**
+ * Quantas linhas a próxima tela pega: linhas da cifra inteiras até "Linhas por tela",
+ * sem atravessar estrofe. Uma linha quebrada sozinha pode passar do limite.
+ */
+function autoCount(cursor) {
+  const per = lyPerScreen()
+  const groupSize = (i) => {
+    let n = 0
+    while (i + n < ly.lines.length && ly.lines[i + n].group === ly.lines[i].group) n++
+    return n
+  }
+  let n = 0
+  while (cursor + n < ly.lines.length) {
+    const next = ly.lines[cursor + n]
+    const size = groupSize(cursor + n)
+    if (n > 0 && (next.breakBefore || n + size > per)) break
+    n += size
+  }
+  return n
+}
+
+function assignLyricRows() {
+  let cursor = lyStart()
+  for (const row of ly.rows) {
+    row.first = cursor
+    if (row.pause) {
+      row.lines = []
+      continue
+    }
+    const n = row.count != null ? row.count : autoCount(cursor)
+    row.lines = ly.lines.slice(cursor, cursor + n)
+    cursor += row.lines.length
+  }
+  ly.used = cursor
+}
+
+function renderLyricLines() {
+  const box = $('ly-song')
+  if (!ly.lines.length) {
+    box.classList.add('hidden')
+    return
+  }
+  box.classList.remove('hidden')
+  $('ly-title').textContent = dg.song ? `Letra — ${dg.song.title}` : 'Letra'
+  const list = $('ly-lines')
+  list.innerHTML = ''
+  const start = lyStart()
+  ly.lines.forEach((line, i) => {
+    const el = document.createElement('div')
+    el.className =
+      'line' +
+      (line.breakBefore && i > 0 ? ' break' : '') +
+      (i === start ? ' start' : '') +
+      (ly.rows.length && i >= start && i < ly.used ? ' used' : '')
+    el.innerHTML = `<small>${i + 1}</small><span>${escapeHtml(line.text)}</span>`
+    el.addEventListener('click', () => {
+      $('ly-start').value = String(i + 1)
+      assignLyricRows()
+      renderLyricRows()
+    })
+    list.appendChild(el)
+  })
+}
+
+function updateLyricHint() {
+  const color = COLOR_NAMES[lyColor()]
+  $('ly-hint').textContent =
+    `Aperte o atalho do marcador ${color} em cada troca de tela da letra. ` +
+    `Um marcador chamado "pausa" limpa a tela (trecho instrumental); "fim" define quando a letra some. ` +
+    `Atalho: Editar › Atalhos do teclado › busque "marcador" e atribua uma tecla a "Adicionar marcador ${color}".`
+}
+
+async function readLyricMarkers() {
+  if (busy) return
+  try {
+    if (!ly.lines.length) throw new Error('Escolha a cifra primeiro')
+    const { sequence } = await getActiveSequence()
+    const color = lyColor()
+    const { markers, fromClips } = await readColoredMarkers(sequence, color)
+    if (!markers.length) {
+      throw new Error(`Nenhum marcador ${COLOR_NAMES[color]} na sequência nem nos clipes`)
+    }
+    const endMarker = markers.find((m) => END_RE.test(m.name))
+    const changes = markers.filter((m) => !END_RE.test(m.name))
+    ly.rows = changes.map((m) => ({ t: m.t, pause: PAUSE_RE.test(m.name), count: null }))
+    const seqEnd = await sequenceEndSec(sequence)
+    const last = changes.length ? changes[changes.length - 1].t : 0
+    ly.endSec = endMarker
+      ? endMarker.t
+      : Math.min(last + DG_TAIL_SEC, seqEnd != null ? seqEnd : Infinity)
+    assignLyricRows()
+    renderLyricRows()
+    lyStatus(`${changes.length} marcador(es) ${COLOR_NAMES[color]}${fromClips ? ' (do clipe)' : ''}`)
+  } catch (e) {
+    lyStatus(`Falha: ${e.message || e}`)
+  }
+}
+
+function renderLyricRows() {
+  const box = $('ly-rows')
+  box.innerHTML = ''
+  box.classList.toggle('hidden', !ly.rows.length)
+
+  ly.rows.forEach((row, k) => {
+    const el = document.createElement('div')
+    el.className = 'mark-row'
+    const text = row.pause
+      ? '— pausa —'
+      : row.lines.length
+        ? row.lines.map((l) => l.text).join(' / ')
+        : '(sem letra)'
+    el.innerHTML = `<span class="idx">${k + 1}</span>
+      <span class="time">${fmtTime(row.t)}</span>
+      <span class="text${row.pause ? ' pause' : ''}" title="${escapeHtml(text)}">${escapeHtml(text)}</span>
+      ${row.pause ? '' : '<button type="button" class="step" data-d="-1" title="Uma linha a menos">−</button><button type="button" class="step" data-d="1" title="Uma linha a mais">+</button>'}
+      <button type="button" class="del" title="Remover">×</button>`
+
+    el.querySelectorAll('.step').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const current = row.count != null ? row.count : row.lines.length
+        row.count = Math.min(4, Math.max(1, current + Number(btn.getAttribute('data-d'))))
+        assignLyricRows()
+        renderLyricRows()
+      })
+    })
+    el.querySelector('.del').addEventListener('click', () => {
+      ly.rows.splice(k, 1)
+      assignLyricRows()
+      renderLyricRows()
+    })
+    box.appendChild(el)
+  })
+
+  renderLyricLines()
+  validateLyricRows()
+}
+
+function validateLyricRows() {
+  const warnings = []
+  const empty = ly.rows.filter((r) => !r.pause && !r.lines.length).length
+  if (empty) {
+    warnings.push(`${empty} marcador(es) sem letra — a letra acabou antes. Comece numa linha anterior ou remova marcadores.`)
+  }
+  const remaining = ly.lines.length - ly.used
+  if (ly.rows.length && !empty && remaining > 0) {
+    warnings.push(`Sobram ${remaining} linha(s) depois do último marcador. OK se for um trecho.`)
+  }
+  const warn = $('ly-warning')
+  warn.textContent = warnings.join(' ')
+  warn.classList.toggle('hidden', !warnings.length)
+  $('ly-render').disabled = busy || !ly.rows.some((r) => r.lines.length)
+}
+
+async function renderLyricsAndPlace() {
+  if (busy) return
+  const rows = ly.rows.filter((r) => r.pause || r.lines.length)
+  if (!rows.some((r) => r.lines.length)) return
+  busy = true
+  validateLyricRows()
+
+  try {
+    const { project, sequence } = await getActiveSequence()
+    lyStatus('Renderizando letra (pode demorar)…')
+    const data = await callHelper('/render-lyrics', {
+      screens: rows.map((r) => ({
+        t: r.t,
+        lines: r.lines.map((l) => ({ text: l.text, chords: l.chords })),
+      })),
+      endSec: ly.endSec,
+      fps: DG_FPS,
+      slug: dg.song ? dg.song.slug : undefined,
+      ...(await frameSizeOf(sequence)),
+    })
+
+    lyStatus(data.cached ? 'Cache OK — importando…' : 'Render OK — importando…')
+    const trackIndex = Math.max(0, Math.floor(dgNumber('ly-track', 3)) - 1)
+    const fallback = await placeRendered(project, sequence, data, trackIndex, 'letra')
+    lyStatus(fallback || `Letra em V${trackIndex + 1} a partir de ${fmtTime(data.startSec)}`)
+  } catch (e) {
+    lyStatus(`Falha: ${e.message || e}`)
+  } finally {
+    busy = false
+    validateLyricRows()
+  }
+}
+
+function wireLyrics() {
+  $('ly-color').value = loadPref('lyColor')
+  $('ly-per').value = loadPref('lyPer')
+  $('ly-track').value = loadPref('lyTrack')
+  $('ly-split').checked = loadPref('lySplit') === '1'
+  updateLyricHint()
+
+  $('ly-color').addEventListener('change', () => {
+    savePref('lyColor', lyColor())
+    updateLyricHint()
+  })
+  $('ly-per').addEventListener('change', () => {
+    savePref('lyPer', lyPerScreen())
+    for (const row of ly.rows) row.count = null
+    assignLyricRows()
+    renderLyricRows()
+  })
+  $('ly-split').addEventListener('change', () => {
+    savePref('lySplit', $('ly-split').checked ? '1' : '0')
+    prepareLyricLines()
+    $('ly-start').value = '1'
+    assignLyricRows()
+    renderLyricRows()
+  })
+  $('ly-track').addEventListener('change', () => savePref('lyTrack', $('ly-track').value))
+  $('ly-start').addEventListener('change', () => {
+    assignLyricRows()
+    renderLyricRows()
+  })
+  $('ly-read').addEventListener('click', () => readLyricMarkers())
+  $('ly-render').addEventListener('click', () => renderLyricsAndPlace())
+}
+
 const HELPER_OFFLINE_MSG =
   'Ajudante de render não está rodando. Instale com npm run helper:install (uma vez por PC).'
+const HELPER_OUTDATED_MSG =
+  'Ajudante de render desatualizado: rode git pull e npm run helper:install de novo.'
 
 async function checkHelper() {
+  let msg = ''
   try {
     const res = await fetch(`${getHelperUrl()}/health`)
     if (!res.ok) throw new Error()
+    const data = await parseJsonResponse(res)
+    if (!(Number(data.version) >= HELPER_MIN_VERSION)) msg = HELPER_OUTDATED_MSG
   } catch {
-    dgStatus(HELPER_OFFLINE_MSG)
+    msg = HELPER_OFFLINE_MSG
+  }
+  if (msg) {
+    dgStatus(msg)
+    lyStatus(msg)
   }
 }
 
@@ -1183,6 +1543,7 @@ function wireDiagrams() {
   })
 
   $('tab-diagrams').addEventListener('click', () => switchTab('diagrams'))
+  $('tab-lyrics').addEventListener('click', () => switchTab('lyrics'))
   $('tab-shorts').addEventListener('click', () => switchTab('shorts'))
 
   $('dg-search').addEventListener('input', (e) => {
@@ -1222,6 +1583,7 @@ function wireDiagrams() {
 
 function wireUi() {
   wireDiagrams()
+  wireLyrics()
   $('btn-settings').addEventListener('click', () => showSettings(true))
   $('btn-back').addEventListener('click', () => showSettings(false))
   $('btn-save-settings').addEventListener('click', () => {
