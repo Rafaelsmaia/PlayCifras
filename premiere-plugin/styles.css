@@ -445,6 +445,7 @@ textarea {
 .line small {
   color: var(--muted);
   width: 22px;
+  margin-right: 8px;
   text-align: right;
   flex: none;
 }
