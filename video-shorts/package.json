@@ -6,14 +6,17 @@
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts Short out/short.mp4",
     "render:overlay": "remotion render src/index.ts ShortOverlay out/overlay.mov --codec=prores --prores-profile=4444 --image-format=png --pixel-format=yuva444p10le",
-    "upgrade": "remotion upgrade"
+    "upgrade": "remotion upgrade",
+    "helper": "node helper/server.mjs"
   },
   "dependencies": {
-    "@remotion/cli": "^4.0.286",
-    "@remotion/media-utils": "^4.0.286",
+    "@remotion/bundler": "4.0.500",
+    "@remotion/cli": "4.0.500",
+    "@remotion/media-utils": "4.0.500",
+    "@remotion/renderer": "4.0.500",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "^4.0.286"
+    "remotion": "4.0.500"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

@@ -47,7 +47,7 @@ function ensureProximaSoft(): Promise<void> {
   if (fontPromise) return fontPromise
   fontPromise = (async () => {
     if (typeof document === 'undefined') return
-    if (document.fonts.check(`700 16px "${CIFRA_VIDEO_FONT}"`)) return
+    // Sem `document.fonts.check`: devolve true quando a fonte nem foi registrada.
     const face = new FontFace(
       CIFRA_VIDEO_FONT,
       `url(${staticFile('fonts/ProximaSoft-Bold.otf')})`,

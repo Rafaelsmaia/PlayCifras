@@ -10,6 +10,11 @@ const premierepro = require('premierepro')
 
 const SETTINGS_KEY = 'playcifras.apiUrl'
 const DEFAULT_API = 'http://localhost:3000'
+const SITE_KEY = 'playcifras.siteUrl'
+const DEFAULT_SITE = 'https://playcifras.vercel.app'
+const HELPER_KEY = 'playcifras.helperUrl'
+/** 127.0.0.1 e não localhost: o ajudante só escuta em IPv4. */
+const DEFAULT_HELPER = 'http://127.0.0.1:3917'
 
 /** @type {{ slug: string, title: string, artist: string, durationSec: number, synced: boolean, lyricCount: number, chordCount: number, diagramCount: number, warning?: string }[]} */
 let shorts = []
@@ -65,7 +70,34 @@ function showSettings(show) {
   $('view-app').classList.toggle('hidden', show)
   if (show) {
     $('api-url').value = getApiUrl()
+    $('site-url').value = getSiteUrl()
+    $('helper-url').value = getHelperUrl()
   }
+}
+
+function readUrlSetting(key, fallback) {
+  try {
+    return localStorage.getItem(key) || fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeUrlSetting(key, value, fallback) {
+  const clean = (value || fallback).trim().replace(/\/$/, '')
+  try {
+    localStorage.setItem(key, clean)
+  } catch {
+    /* ignore */
+  }
+}
+
+function getSiteUrl() {
+  return readUrlSetting(SITE_KEY, DEFAULT_SITE)
+}
+
+function getHelperUrl() {
+  return readUrlSetting(HELPER_KEY, DEFAULT_HELPER)
 }
 
 function showDetail(item) {
@@ -554,7 +586,7 @@ async function searchSongs(q) {
   }
   try {
     const res = await fetch(
-      `${getApiUrl()}/api/search?type=songs&limit=8&q=${encodeURIComponent(q)}`
+      `${getSiteUrl()}/api/search?type=songs&limit=8&q=${encodeURIComponent(q)}`
     )
     const data = await parseJsonResponse(res)
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
@@ -584,7 +616,7 @@ async function loadSong(slug) {
   dgStatus('Carregando cifra…')
   try {
     const res = await fetch(
-      `${getApiUrl()}/api/plugin/songs/${encodeURIComponent(slug)}/chords`
+      `${getSiteUrl()}/api/plugin/songs/${encodeURIComponent(slug)}/chords`
     )
     const data = await parseJsonResponse(res)
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
@@ -942,16 +974,22 @@ async function renderDiagramsAndPlace() {
   try {
     const { project, sequence } = await getActiveSequence()
     dgStatus('Renderizando animação (pode demorar)…')
-    const res = await fetch(`${getApiUrl()}/api/plugin/diagram-overlay`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
-        endSec: dg.endSec,
-        fps: DG_FPS,
-        slug: dg.song ? dg.song.slug : undefined,
-      }),
-    })
+    let res
+    try {
+      res = await fetch(`${getHelperUrl()}/render-diagrams`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
+          endSec: dg.endSec,
+          fps: DG_FPS,
+          slug: dg.song ? dg.song.slug : undefined,
+          siteUrl: getSiteUrl(),
+        }),
+      })
+    } catch {
+      throw new Error(HELPER_OFFLINE_MSG)
+    }
     const data = await parseJsonResponse(res)
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
 
@@ -1002,6 +1040,18 @@ async function renderDiagramsAndPlace() {
   } finally {
     busy = false
     validateRows()
+  }
+}
+
+const HELPER_OFFLINE_MSG =
+  'Ajudante de render não está rodando. Instale com npm run helper:install (uma vez por PC).'
+
+async function checkHelper() {
+  try {
+    const res = await fetch(`${getHelperUrl()}/health`)
+    if (!res.ok) throw new Error()
+  } catch {
+    dgStatus(HELPER_OFFLINE_MSG)
   }
 }
 
@@ -1057,8 +1107,10 @@ function wireUi() {
   $('btn-back').addEventListener('click', () => showSettings(false))
   $('btn-save-settings').addEventListener('click', () => {
     setApiUrl($('api-url').value)
+    writeUrlSetting(SITE_KEY, $('site-url').value, DEFAULT_SITE)
+    writeUrlSetting(HELPER_KEY, $('helper-url').value, DEFAULT_HELPER)
     showSettings(false)
-    fetchShorts()
+    checkHelper()
   })
   $('btn-refresh').addEventListener('click', () => fetchShorts())
   $('search').addEventListener('input', (e) => renderList(e.target.value))
@@ -1079,8 +1131,7 @@ entrypoints.setup({
           wireUi()
           uiReady = true
         }
-        if ($('api-url')) $('api-url').value = getApiUrl()
-        fetchShorts()
+        checkHelper()
       },
     },
   },

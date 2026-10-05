@@ -1,4 +1,5 @@
 # Gerado por short:prepare — não versionar binários grandes
 public/short/
 out/
+helper/helper.log
 node_modules/

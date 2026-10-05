@@ -29,6 +29,16 @@ Sem áudio no overlay — o áudio é o do seu vídeo.
 
 Card transparente (600×780, ProRes 4444 alpha, sem áudio) com o diagrama trocando no tempo da música: cada dedo desliza até a nova posição, pestana e casa base acompanham. Não precisa de short preparado — os tempos vêm dos marcadores da sua sequência.
 
+**Não precisa de `npm run dev`.** Cifras e digitações vêm do site no ar; o vídeo é renderizado pelo **ajudante de render**, um processo invisível que abre com o Windows.
+
+**Instalar o ajudante (uma vez por PC, precisa do Node.js):**
+
+```powershell
+npm run helper:install
+```
+
+Copia `video-shorts/` para `%LOCALAPPDATA%\PlayCifras\render-helper`, instala as dependências e registra na Inicialização do Windows. Rode de novo para atualizar depois de um `git pull`. Vídeos gerados ficam em `Documentos\PlayCifras\Overlays`; log em `%LOCALAPPDATA%\PlayCifras\render-helper\helper\helper.log`. Para remover: `npm run helper:uninstall`.
+
 **Modo manual (padrão)**
 
 1. Sincronize o áudio do Studio One com o vídeo.
@@ -82,7 +92,8 @@ Dicas: escale/posicione o card com **Movimento** no Premiere. A trilha escolhida
 | `GET /api/plugin/shorts/:slug/overlay?meta=1` | Path do overlay |
 | `GET /api/plugin/shorts/:slug/package?format=json` | Pacote SRT/PNG |
 | `GET /api/plugin/songs/:slug/chords` | Sequência de acordes da cifra (ordem tocada) |
-| `POST /api/plugin/diagram-overlay` | `{ marks: [{t, chord}], endSec }` → `exports/diagram-overlays/<slug>-<hash>.mov` + `startSec` |
+| `POST /api/plugin/chord-shapes` | `{ chords }` → digitações prontas para a composição (usado pelo ajudante) |
+| Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl }` → `.mov` + `startSec` |
 
 ## CLI
 

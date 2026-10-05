@@ -30,6 +30,8 @@
     "short:studio": "npm run studio --prefix video-shorts",
     "short:render": "tsx scripts/video-pipeline/render-short.ts",
     "short:overlay": "tsx scripts/video-pipeline/render-overlay.ts",
+    "helper:install": "powershell -NoProfile -ExecutionPolicy Bypass -File video-shorts/helper/install.ps1",
+    "helper:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File video-shorts/helper/uninstall.ps1",
     "short:premiere": "tsx scripts/video-pipeline/export-premiere.ts",
     "short:export-srt": "tsx scripts/video-pipeline/export-premiere.ts",
     "short:editor": "echo Abra http://localhost:3000/short-editor/<slug> com o dev server",

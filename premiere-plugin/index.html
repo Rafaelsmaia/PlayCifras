@@ -17,13 +17,21 @@
     <section id="view-settings" class="panel hidden">
       <h2>Configurações</h2>
       <label class="field">
-        URL da API PlayCifras
+        Site PlayCifras (cifras e acordes)
+        <input id="site-url" type="text" placeholder="https://playcifras.vercel.app" />
+      </label>
+      <label class="field">
+        Ajudante de render (diagramas)
+        <input id="helper-url" type="text" placeholder="http://127.0.0.1:3917" />
+      </label>
+      <label class="field">
+        API de Shorts (desenvolvimento)
         <input id="api-url" type="text" placeholder="http://localhost:3000" />
       </label>
       <p class="hint">
-        Em desenvolvimento use <code>http://localhost:3000</code> com o
-        <code>npm run dev</code> rodando. O render do overlay usa Remotion no
-        mesmo PC.
+        A aba Diagramas usa o site no ar e o ajudante de render instalado neste
+        PC (<code>npm run helper:install</code>). A aba Shorts ainda precisa do
+        <code>npm run dev</code>.
       </p>
       <div class="row">
         <button type="button" id="btn-save-settings" class="btn primary">
