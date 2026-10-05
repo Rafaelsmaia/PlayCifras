@@ -613,6 +613,21 @@ function updateSongBlock() {
   const current = $('song-current')
   current.textContent = dg.song ? `${dg.song.title} — ${dg.song.artist}` : ''
   current.classList.toggle('hidden', !dg.song)
+  updateVersionSelect()
+}
+
+function updateVersionSelect() {
+  const versions = (dg.song && dg.song.versions) || []
+  const select = $('song-version')
+  $('song-version-field').classList.toggle('hidden', versions.length < 2)
+  select.innerHTML = ''
+  for (const v of versions) {
+    const opt = document.createElement('option')
+    opt.value = v.slug
+    opt.textContent = v.key ? `${v.label} (tom ${v.key})` : v.label
+    opt.selected = v.slug === dg.song.slug
+    select.appendChild(opt)
+  }
 }
 
 function applySource() {
@@ -1551,6 +1566,7 @@ function wireDiagrams() {
     const q = e.target.value
     dg.searchTimer = setTimeout(() => searchSongs(q), 300)
   })
+  $('song-version').addEventListener('change', (e) => loadSong(e.target.value))
   $('dg-mode').addEventListener('change', () => {
     savePref('mode', dgMode())
     dg.rows = []

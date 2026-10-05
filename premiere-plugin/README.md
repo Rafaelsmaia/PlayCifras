@@ -49,6 +49,10 @@ Copia `video-shorts/` para `%LOCALAPPDATA%\PlayCifras\render-helper`, instala as
 
 Só contam marcadores da **cor escolhida** (padrão verde, que é a cor do `M`). Troque a cor se usa verde para outras coisas. Marcador com nome de acorde (ex.: `Am`) usa esse nome; um marcador chamado `fim` define quando o card some (sem ele: 4 s após o último).
 
+**Versões da música**
+
+Se a música tiver mais de uma cifra no site (ex.: `Aquieta Minh'alma` e `Aquieta Minh'alma (Simplificada)`), aparece o campo **Versão** abaixo da música escolhida — vale para as abas Diagramas e Letra. Versões são cifras do mesmo artista com o mesmo título e um sufixo entre parênteses; sem sufixo é a **Principal**.
+
 **Sequência livre**
 
 Em **Acordes de → Sequência livre**, digite os acordes separados por espaço (ex.: `A9 E F#m11/C# D9`) em vez de buscar uma cifra. Com **Repetir a sequência** marcado, ela volta ao início quando acaba — útil para progressões que se repetem. O painel avisa na hora quais acordes não têm diagrama na biblioteca.
@@ -107,7 +111,7 @@ Marcador chamado `pausa` limpa a tela (trecho instrumental); `fim` define quando
 | `POST /api/plugin/shorts/:slug/render-overlay` | Gera/cache `exports/shorts/<slug>/overlay.mov` |
 | `GET /api/plugin/shorts/:slug/overlay?meta=1` | Path do overlay |
 | `GET /api/plugin/shorts/:slug/package?format=json` | Pacote SRT/PNG |
-| `GET /api/plugin/songs/:slug/chords` | Sequência de acordes da cifra (ordem tocada) + `lines` (letra com `{chord, at}` por sílaba) |
+| `GET /api/plugin/songs/:slug/chords` | Sequência de acordes da cifra (ordem tocada) + `lines` (letra com `{chord, at}` por sílaba) + `versions` (`[{slug, key, label}]`) |
 | `POST /api/plugin/chord-shapes` | `{ chords }` → digitações prontas para a composição (usado pelo ajudante) |
 | Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl, width, height }` → `.mov` + `startSec` |
 | Ajudante `POST http://127.0.0.1:3917/render-lyrics` | `{ screens: [{t, lines}], endSec, width, height }` → `.mov` + `startSec` |
