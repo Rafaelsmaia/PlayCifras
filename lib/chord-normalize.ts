@@ -25,20 +25,26 @@ const CHORD_ALIASES: Record<string, string> = {
   E2: 'Eadd9',
 }
 
+/** Notação BR: E4 = Esus4 (e E4/G# = Esus4/G#). */
+function sus4Alias(name: string): string | null {
+  const m = /^([A-G](?:#|b)?)4(\/.+)?$/.exec(name)
+  return m ? `${m[1]}sus4${m[2] ?? ''}` : null
+}
+
 export function chordLookupKeys(name: string): string[] {
   const n = name.trim()
   if (!n) return []
   const keys = new Set<string>([n])
   const major = /^([A-G](?:#|b)?)M$/.exec(n)
   if (major) keys.add(major[1])
-  const alias = CHORD_ALIASES[n]
+  const alias = CHORD_ALIASES[n] ?? sus4Alias(n)
   if (alias) keys.add(alias)
   // C9/E → também tenta C9
   const slash = n.indexOf('/')
   if (slash > 0) {
     const base = n.slice(0, slash)
     keys.add(base)
-    const baseAlias = CHORD_ALIASES[base]
+    const baseAlias = CHORD_ALIASES[base] ?? sus4Alias(base)
     if (baseAlias) keys.add(baseAlias)
   }
   return Array.from(keys)

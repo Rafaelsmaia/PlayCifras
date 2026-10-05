@@ -20,6 +20,8 @@ const CHORD_BODY =
   'm\\d*|' +
   '\\+|' +
   '°|' +
+  // Extensões entre parênteses: F#m7(11), D5(6/9), A7(b9), C7(#11)
+  '\\([#b+\\-]?\\d+M?(?:[/,][#b+\\-]?\\d+M?)*\\)|' +
   // 7M / 9M = maj7/maj9 (notação BR); precisa vir antes de \\d+ isolado
   '\\d+M|' +
   '\\d+' +
