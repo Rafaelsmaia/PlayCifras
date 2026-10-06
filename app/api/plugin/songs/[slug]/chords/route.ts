@@ -7,11 +7,15 @@ export const dynamic = 'force-dynamic'
 type Ctx = { params: { slug: string } }
 
 const VERSION_SUFFIX_RE = /\s*\(([^)]*)\)\s*$/
+const FEATURING_RE = /^(?:part\.?|feat\.?|ft\.?|com)\s/i
 
-/** "Aquieta Minh'alma (Simplificada)" → base "Aquieta Minh'alma", rótulo "Simplificada". */
+/**
+ * "Aquieta Minh'alma (Simplificada)" → base "Aquieta Minh'alma", rótulo "Simplificada".
+ * "(part. Fulano)" é participação, não versão.
+ */
 function splitVersion(title: string) {
   const m = title.match(VERSION_SUFFIX_RE)
-  return m
+  return m && !FEATURING_RE.test(m[1].trim())
     ? { base: title.slice(0, m.index).trim(), label: m[1].trim() || 'Principal' }
     : { base: title.trim(), label: 'Principal' }
 }
