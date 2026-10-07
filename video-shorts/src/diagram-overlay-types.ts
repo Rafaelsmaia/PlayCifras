@@ -42,3 +42,15 @@ export type LyricsOverlayProps = {
   width?: number
   height?: number
 }
+
+export type RhythmStroke = 'down' | 'up'
+
+/** Imagem estática: rótulo ("Ritmo:") e setas da batida. */
+export type RhythmOverlayProps = {
+  strokes: RhythmStroke[]
+  label: string
+  /** Centro vertical do bloco (fração da altura). */
+  centerY?: number
+  width?: number
+  height?: number
+}

@@ -2,7 +2,12 @@ import React from 'react'
 import { Composition } from 'remotion'
 import { DIAGRAM_OVERLAY_DEMO, DiagramOverlayComposition } from './DiagramOverlay'
 import { LYRICS_OVERLAY_DEMO, LyricsOverlayComposition } from './LyricsOverlay'
-import type { DiagramOverlayProps, LyricsOverlayProps } from './diagram-overlay-types'
+import { RHYTHM_OVERLAY_DEMO, RhythmOverlayComposition } from './RhythmOverlay'
+import type {
+  DiagramOverlayProps,
+  LyricsOverlayProps,
+  RhythmOverlayProps,
+} from './diagram-overlay-types'
 import { frameOf } from './overlay-layout'
 
 /** ProRes exige dimensões pares. */
@@ -39,6 +44,18 @@ export const DiagramOverlayEntry: React.FC = () => (
       height={1920}
       defaultProps={LYRICS_OVERLAY_DEMO}
       calculateMetadata={({ props }: { props: LyricsOverlayProps }) => metadataOf(props)}
+    />
+    <Composition
+      id="RhythmOverlay"
+      component={RhythmOverlayComposition}
+      durationInFrames={1}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={RHYTHM_OVERLAY_DEMO}
+      calculateMetadata={({ props }: { props: RhythmOverlayProps }) =>
+        metadataOf({ ...props, durationSec: 1 / 30, fps: 30 })
+      }
     />
   </>
 )

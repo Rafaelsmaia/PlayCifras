@@ -1,7 +1,8 @@
 /**
  * Ajudante de render PlayCifras: servidor local (porta 3917) que renderiza os overlays
  * do plugin do Premiere (Remotion → ProRes 4444 com alpha): troca animada de diagramas
- * e letra com cifras. Digitações vêm do site (/api/plugin/chord-shapes); nada de banco aqui.
+ * e letra com cifras, mais o ritmo (setas) como PNG transparente.
+ * Digitações vêm do site (/api/plugin/chord-shapes); nada de banco aqui.
  */
 import http from 'node:http'
 import os from 'node:os'
@@ -10,9 +11,9 @@ import { createHash } from 'node:crypto'
 import { appendFile, mkdir, stat } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { bundle } from '@remotion/bundler'
-import { ensureBrowser, renderMedia, selectComposition } from '@remotion/renderer'
+import { ensureBrowser, renderMedia, renderStill, selectComposition } from '@remotion/renderer'
 
-const HELPER_VERSION = 2
+const HELPER_VERSION = 3
 /** Mude quando o visual da composição mudar (invalida o cache). */
 const RENDER_VERSION = 5
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
@@ -160,14 +161,37 @@ async function renderLyrics(body) {
   return { ...result, startSec, durationSec }
 }
 
-async function renderOverlay({ compositionId, props, slug, force, label }) {
+/** Imagem estática (PNG transparente) com o rótulo e as setas da batida. */
+async function renderRhythm(body) {
+  const strokes = (Array.isArray(body.strokes) ? body.strokes : [])
+    .filter((s) => s === 'down' || s === 'up')
+    .slice(0, 16)
+  if (!strokes.length) throw new Error('Monte o ritmo com pelo menos uma seta')
+  const cy = Number(body.centerY)
+  const props = {
+    strokes,
+    label: String(body.label ?? 'Ritmo:').slice(0, 40),
+    centerY: Number.isFinite(cy) ? Math.min(0.95, Math.max(0.05, cy)) : undefined,
+    ...frameSize(body),
+  }
+  return renderOverlay({
+    compositionId: 'RhythmOverlay',
+    props,
+    slug: 'ritmo',
+    force: body.force,
+    label: `${strokes.length} setas`,
+    still: true,
+  })
+}
+
+async function renderOverlay({ compositionId, props, slug, force, label, still = false }) {
   const hash = createHash('sha1')
     .update(JSON.stringify({ v: RENDER_VERSION, id: compositionId, props }))
     .digest('hex')
     .slice(0, 10)
 
   await mkdir(OUT_DIR, { recursive: true })
-  const fileName = `${safeSlug(slug)}-${hash}.mov`
+  const fileName = `${safeSlug(slug)}-${hash}.${still ? 'png' : 'mov'}`
   const overlayPath = path.join(OUT_DIR, fileName)
   const result = { overlayPath, fileName }
 
@@ -182,8 +206,22 @@ async function renderOverlay({ compositionId, props, slug, force, label }) {
     id: compositionId,
     inputProps: props,
   })
-  log(`Renderizando ${fileName} (${props.durationSec}s, ${label}, ${props.width}×${props.height})…`)
   const t0 = Date.now()
+  if (still) {
+    log(`Renderizando ${fileName} (${label}, ${props.width}×${props.height})…`)
+    await renderStill({
+      composition,
+      serveUrl,
+      inputProps: props,
+      frame: 0,
+      imageFormat: 'png',
+      overwrite: true,
+      output: overlayPath,
+    })
+    log(`Pronto em ${((Date.now() - t0) / 1000).toFixed(1)}s: ${overlayPath}`)
+    return { ...result, cached: false }
+  }
+  log(`Renderizando ${fileName} (${props.durationSec}s, ${label}, ${props.width}×${props.height})…`)
   await renderMedia({
     composition,
     serveUrl,
@@ -235,7 +273,11 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true, version: HELPER_VERSION, outDir: OUT_DIR })
   }
 
-  const routes = { '/render-diagrams': renderDiagrams, '/render-lyrics': renderLyrics }
+  const routes = {
+    '/render-diagrams': renderDiagrams,
+    '/render-lyrics': renderLyrics,
+    '/render-rhythm': renderRhythm,
+  }
   if (req.method === 'POST' && routes[url.pathname]) {
     try {
       const body = await readJson(req)

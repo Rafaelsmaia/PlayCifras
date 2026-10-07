@@ -14,6 +14,9 @@ export const LAYOUT = {
   lyricsCenterY: 0.47,
   /** Largura máxima da letra antes de encolher a fonte. */
   lyricsMaxWidth: 0.6,
+  /** Centro do bloco "Ritmo:" + setas (centralizado na horizontal). */
+  rhythmCenterY: 0.8,
+  rhythmMaxWidth: 0.9,
 }
 
 export function frameOf(p: { width?: number; height?: number }) {

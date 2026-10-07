@@ -369,6 +369,38 @@ textarea {
   background: #2c2410;
 }
 
+.strokes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #141414;
+}
+
+.stroke {
+  width: 28px;
+  height: 34px;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.stroke.up,
+.stroke-btn.up {
+  color: #f33aff;
+}
+
 .list.rows {
   flex: none;
   min-height: 0;

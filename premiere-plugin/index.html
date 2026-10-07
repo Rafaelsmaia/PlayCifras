@@ -45,6 +45,7 @@
       <nav class="tabs">
         <button type="button" id="tab-diagrams" class="tab active">Diagramas</button>
         <button type="button" id="tab-lyrics" class="tab">Letra</button>
+        <button type="button" id="tab-rhythm" class="tab">Ritmo</button>
         <button type="button" id="tab-shorts" class="tab">Shorts</button>
       </nav>
 
@@ -209,6 +210,54 @@
 
         <button type="button" id="ly-render" class="btn primary" disabled>
           Gerar letra e colocar na timeline
+        </button>
+      </section>
+
+      <section id="view-rhythm" class="panel hidden">
+        <div id="rt-preview" class="strokes"></div>
+        <div class="row tight">
+          <button type="button" id="rt-down" class="btn stroke-btn">↓ Para baixo</button>
+          <button type="button" id="rt-up" class="btn stroke-btn up">↑ Para cima</button>
+        </div>
+        <div class="row tight">
+          <button type="button" id="rt-undo" class="btn">Apagar última</button>
+          <button type="button" id="rt-clear" class="btn">Limpar</button>
+        </div>
+        <p class="hint">Clique numa seta da prévia para inverter a direção. Até 16 setas.</p>
+
+        <div class="row">
+          <label class="field grow">
+            Texto
+            <input id="rt-label" type="text" value="Ritmo:" />
+          </label>
+          <label class="field grow">
+            Altura no vídeo (%)
+            <input id="rt-height" type="number" min="5" max="95" value="80" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Duração (s)
+            <input id="rt-duration" type="number" min="0.5" step="0.5" placeholder="até o fim" />
+          </label>
+          <label class="field grow">
+            Trilha de vídeo
+            <input id="rt-track" type="number" min="1" max="20" value="4" />
+          </label>
+        </div>
+
+        <p class="hint">
+          Entra na agulha (playhead) como imagem transparente. Sem duração, vai até o fim da
+          sequência. Altura: 0 = topo, 100 = base do vídeo.
+        </p>
+
+        <div class="row tight">
+          <span id="rt-status" class="status"></span>
+        </div>
+
+        <button type="button" id="rt-render" class="btn primary" disabled>
+          Gerar ritmo e colocar na agulha
         </button>
       </section>
 

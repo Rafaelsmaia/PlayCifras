@@ -46,7 +46,7 @@ export const LYRICS_OVERLAY_DEMO: LyricsOverlayProps = {
 }
 
 /** Só libera o frame depois que a fonte carregou e o bloco foi medido com ela. */
-function useFontReady() {
+export function useFontReady() {
   const [handle] = useState(() => delayRender('Proxima Soft Bold'))
   const [ready, setReady] = useState(false)
   useEffect(() => {

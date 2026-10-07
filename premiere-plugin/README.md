@@ -75,6 +75,16 @@ Overlay transparente com a letra em telas de 1–3 linhas, acordes em magenta so
 
 Marcador chamado `pausa` limpa a tela (trecho instrumental); `fim` define quando a letra some. **Quebrar linhas longas** divide linhas com mais de 28 caracteres em duas, que ficam sempre na mesma tela.
 
+## Aba Ritmo (setas da batida)
+
+Imagem estática transparente (PNG) com "Ritmo:" e as setas — para baixo em branco, para cima em magenta — centralizada na parte de baixo do vídeo.
+
+1. Monte o ritmo com **↓ Para baixo** / **↑ Para cima** (até 16 setas). Clique numa seta da prévia para inverter; **Apagar última** / **Limpar** corrigem.
+2. Ajuste o **Texto** (padrão `Ritmo:`; vazio = só as setas) e a **Altura no vídeo** (centro do bloco, % da altura; padrão 80).
+3. Posicione a agulha onde o ritmo deve aparecer e clique em **Gerar ritmo e colocar na agulha** (padrão V4).
+
+Sem **Duração**, a imagem vai até o fim da sequência. Se o Premiere não aceitar a duração pela API, o painel avisa — é só arrastar a borda do clipe.
+
 ## Fluxo diário (Shorts)
 
 1. Prepare e sincronize:
@@ -115,6 +125,7 @@ Marcador chamado `pausa` limpa a tela (trecho instrumental); `fim` define quando
 | `POST /api/plugin/chord-shapes` | `{ chords }` → digitações prontas para a composição (usado pelo ajudante) |
 | Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl, width, height }` → `.mov` + `startSec` |
 | Ajudante `POST http://127.0.0.1:3917/render-lyrics` | `{ screens: [{t, lines}], endSec, width, height }` → `.mov` + `startSec` |
+| Ajudante `POST http://127.0.0.1:3917/render-rhythm` | `{ strokes: ['down'\|'up'], label, centerY, width, height }` → `.png` transparente |
 
 ## CLI
 

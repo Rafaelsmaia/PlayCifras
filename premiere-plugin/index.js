@@ -496,9 +496,13 @@ const DG_PREFS = {
   lyPer: ['playcifras.ly.per', '2'],
   lyTrack: ['playcifras.ly.track', '3'],
   lySplit: ['playcifras.ly.split', '1'],
+  rtStrokes: ['playcifras.rt.strokes', '["down","up","down","down","down","up","down"]'],
+  rtLabel: ['playcifras.rt.label', 'Ritmo:'],
+  rtHeight: ['playcifras.rt.height', '80'],
+  rtTrack: ['playcifras.rt.track', '4'],
 }
-/** Ajudante com /render-lyrics e quadro do tamanho da sequência. */
-const HELPER_MIN_VERSION = 2
+/** Ajudante com /render-rhythm (PNG) e quadro do tamanho da sequência. */
+const HELPER_MIN_VERSION = 3
 const DG_FPS = 30
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
 const DG_TAIL_SEC = 4
@@ -607,7 +611,7 @@ function updateSequenceBox() {
 /** Busca de cifra é comum às abas Diagramas (se não for sequência livre) e Letra. */
 function updateSongBlock() {
   const tab = dg.tab
-  $('song-block').classList.toggle('hidden', tab === 'shorts')
+  $('song-block').classList.toggle('hidden', tab === 'shorts' || tab === 'rhythm')
   $('dg-source-field').classList.toggle('hidden', tab !== 'diagrams')
   $('dg-song-source').classList.toggle('hidden', tab === 'diagrams' && dgSource() === 'free')
   const current = $('song-current')
@@ -692,6 +696,7 @@ function switchTab(name) {
   for (const [tab, view] of [
     ['diagrams', 'view-diagrams'],
     ['lyrics', 'view-lyrics'],
+    ['rhythm', 'view-rhythm'],
     ['shorts', 'view-main'],
   ]) {
     $(`tab-${tab}`).classList.toggle('active', tab === name)
@@ -1514,6 +1519,199 @@ function wireLyrics() {
   $('ly-render').addEventListener('click', () => renderLyricsAndPlace())
 }
 
+/* ---------- Ritmo (setas estáticas) ---------- */
+
+const RT_MAX_STROKES = 16
+/** Sem duração e sem fim de sequência depois da agulha. */
+const RT_FALLBACK_SEC = 5
+
+const rt = { strokes: [] }
+
+function rtStatus(msg) {
+  $('rt-status').textContent = msg || ''
+}
+
+function loadStrokes() {
+  try {
+    const list = JSON.parse(loadPref('rtStrokes'))
+    return Array.isArray(list)
+      ? list.filter((s) => s === 'down' || s === 'up').slice(0, RT_MAX_STROKES)
+      : []
+  } catch {
+    return []
+  }
+}
+
+function setStrokes(list) {
+  rt.strokes = list.slice(0, RT_MAX_STROKES)
+  savePref('rtStrokes', JSON.stringify(rt.strokes))
+  renderStrokes()
+}
+
+function renderStrokes() {
+  const box = $('rt-preview')
+  box.innerHTML = ''
+  if (!rt.strokes.length) {
+    box.innerHTML = '<span class="hint">Use os botões abaixo para montar o ritmo.</span>'
+  }
+  rt.strokes.forEach((stroke, i) => {
+    const el = document.createElement('button')
+    el.type = 'button'
+    el.className = `stroke ${stroke}`
+    el.textContent = stroke === 'up' ? '↑' : '↓'
+    el.title = 'Inverter'
+    el.addEventListener('click', () => {
+      const next = rt.strokes.slice()
+      next[i] = stroke === 'up' ? 'down' : 'up'
+      setStrokes(next)
+    })
+    box.appendChild(el)
+  })
+  const empty = !rt.strokes.length
+  $('rt-render').disabled = empty
+  $('rt-undo').disabled = empty
+  $('rt-clear').disabled = empty
+  $('rt-down').disabled = rt.strokes.length >= RT_MAX_STROKES
+  $('rt-up').disabled = rt.strokes.length >= RT_MAX_STROKES
+}
+
+/** Executa uma ação de edição; false se a API não existir ou o Premiere recusar. */
+function runEdit(project, label, makeAction) {
+  let ok = false
+  try {
+    project.lockedAccess(() => {
+      ok = project.executeTransaction((compoundAction) => {
+        compoundAction.addAction(makeAction())
+      }, label)
+    })
+  } catch {
+    ok = false
+  }
+  return ok
+}
+
+async function trackItemAt(sequence, trackIndex, startSec) {
+  try {
+    const track = await sequence.getVideoTrack(trackIndex)
+    const items = (await track.getTrackItems(1, false)) || []
+    for (const item of items) {
+      if (Math.abs(tickSeconds(await item.getStartTime()) - startSec) < 0.02) return item
+    }
+  } catch {
+    /* trilha inexistente */
+  }
+  return null
+}
+
+/**
+ * Importa o PNG, coloca na agulha e estica até `durationSec`.
+ * Tenta a duração no item do projeto (antes) e no clipe da timeline (depois).
+ */
+async function placeStill(project, sequence, data, trackIndex, startSec, durationSec) {
+  let insertionBin = null
+  try {
+    insertionBin = await project.getInsertionBin()
+  } catch {
+    insertionBin = null
+  }
+  const imported = await project.importFiles([data.overlayPath], true, insertionBin, false)
+  if (!imported) throw new Error('Falha ao importar o PNG')
+
+  const projectItem =
+    (insertionBin && (await findItemByName(insertionBin, data.fileName))) ||
+    (await findItemByName(await project.getRootItem(), data.fileName))
+  if (!projectItem) return `${data.fileName} está no bin — arraste para ${fmtTime(startSec)}.`
+
+  const clip = premierepro.ClipProjectItem.cast(projectItem)
+  if (clip && typeof clip.createSetInOutPointsAction === 'function') {
+    runEdit(project, 'PlayCifras duração do ritmo', () =>
+      clip.createSetInOutPointsAction(premierepro.TickTime.TIME_ZERO, secondsToTickTime(durationSec))
+    )
+  }
+
+  const editor = premierepro.SequenceEditor.getEditor(sequence)
+  const placed = runEdit(project, 'PlayCifras ritmo', () =>
+    editor.createOverwriteItemAction(projectItem, secondsToTickTime(startSec), trackIndex, 0)
+  )
+  if (!placed) return `No bin — não coube em V${trackIndex + 1}; arraste para ${fmtTime(startSec)}.`
+
+  const endSec = startSec + durationSec
+  const item = await trackItemAt(sequence, trackIndex, startSec)
+  if (!item) return null
+  let actualEnd = tickSeconds(await item.getEndTime())
+  if (Math.abs(actualEnd - endSec) > 0.05) {
+    if (typeof item.createSetEndAction === 'function') {
+      runEdit(project, 'PlayCifras duração do ritmo', () =>
+        item.createSetEndAction(secondsToTickTime(endSec))
+      )
+    } else if (typeof item.createSetOutPointAction === 'function') {
+      const inPoint = tickSeconds(await item.getInPoint())
+      runEdit(project, 'PlayCifras duração do ritmo', () =>
+        item.createSetOutPointAction(secondsToTickTime(inPoint + durationSec))
+      )
+    }
+    actualEnd = tickSeconds(await item.getEndTime())
+  }
+  if (Math.abs(actualEnd - endSec) > 0.05) {
+    return `Ritmo em V${trackIndex + 1} (${fmtTime(startSec)}), mas com ${(actualEnd - startSec).toFixed(1)} s — arraste a borda até ${fmtTime(endSec)}.`
+  }
+  return null
+}
+
+async function renderRhythmAndPlace() {
+  if (busy || !rt.strokes.length) return
+  busy = true
+  try {
+    const { project, sequence } = await getActiveSequence()
+    let startSec = 0
+    try {
+      startSec = tickSeconds(await sequence.getPlayerPosition())
+    } catch {
+      startSec = 0
+    }
+    const typed = Number($('rt-duration').value)
+    let durationSec = typed > 0 ? typed : ((await sequenceEndSec(sequence)) || 0) - startSec
+    if (!(durationSec > 0.1)) durationSec = RT_FALLBACK_SEC
+
+    rtStatus('Gerando imagem…')
+    const height = Math.min(95, Math.max(5, dgNumber('rt-height', 80)))
+    const data = await callHelper('/render-rhythm', {
+      strokes: rt.strokes,
+      label: $('rt-label').value,
+      centerY: height / 100,
+      ...(await frameSizeOf(sequence)),
+    })
+
+    rtStatus('Importando…')
+    const trackIndex = Math.max(0, Math.floor(dgNumber('rt-track', 4)) - 1)
+    const fallback = await placeStill(project, sequence, data, trackIndex, startSec, durationSec)
+    rtStatus(
+      fallback ||
+        `Ritmo em V${trackIndex + 1}: ${fmtTime(startSec)} → ${fmtTime(startSec + durationSec)}`
+    )
+  } catch (e) {
+    rtStatus(`Falha: ${e.message || e}`)
+  } finally {
+    busy = false
+  }
+}
+
+function wireRhythm() {
+  $('rt-label').value = loadPref('rtLabel')
+  $('rt-height').value = loadPref('rtHeight')
+  $('rt-track').value = loadPref('rtTrack')
+  setStrokes(loadStrokes())
+
+  $('rt-down').addEventListener('click', () => setStrokes([...rt.strokes, 'down']))
+  $('rt-up').addEventListener('click', () => setStrokes([...rt.strokes, 'up']))
+  $('rt-undo').addEventListener('click', () => setStrokes(rt.strokes.slice(0, -1)))
+  $('rt-clear').addEventListener('click', () => setStrokes([]))
+  $('rt-label').addEventListener('change', () => savePref('rtLabel', $('rt-label').value))
+  $('rt-height').addEventListener('change', () => savePref('rtHeight', $('rt-height').value))
+  $('rt-track').addEventListener('change', () => savePref('rtTrack', $('rt-track').value))
+  $('rt-render').addEventListener('click', () => renderRhythmAndPlace())
+}
+
 const HELPER_OFFLINE_MSG =
   'Ajudante de render não está rodando. Instale com npm run helper:install (uma vez por PC).'
 const HELPER_OUTDATED_MSG =
@@ -1532,6 +1730,7 @@ async function checkHelper() {
   if (msg) {
     dgStatus(msg)
     lyStatus(msg)
+    rtStatus(msg)
   }
 }
 
@@ -1559,6 +1758,7 @@ function wireDiagrams() {
 
   $('tab-diagrams').addEventListener('click', () => switchTab('diagrams'))
   $('tab-lyrics').addEventListener('click', () => switchTab('lyrics'))
+  $('tab-rhythm').addEventListener('click', () => switchTab('rhythm'))
   $('tab-shorts').addEventListener('click', () => switchTab('shorts'))
 
   $('dg-search').addEventListener('input', (e) => {
@@ -1600,6 +1800,7 @@ function wireDiagrams() {
 function wireUi() {
   wireDiagrams()
   wireLyrics()
+  wireRhythm()
   $('btn-settings').addEventListener('click', () => showSettings(true))
   $('btn-back').addEventListener('click', () => showSettings(false))
   $('btn-save-settings').addEventListener('click', () => {
