@@ -46,7 +46,7 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
   // --- abertos / básicos ---
   C: chord([-1, 3, 2, 0, 1, 0], '032010'),
   Cm: chord([-1, 3, 5, 5, 4, 3], '013421', { barre: true, barreFret: 3 }),
-  D: chord([-1, -1, 0, 2, 3, 2], '000123'),
+  D: chord([-1, -1, 0, 2, 3, 2], '000132'),
   E: chord([0, 2, 2, 1, 0, 0], '023100'),
   G: chord([3, 2, 0, 0, 3, 3], '320033'),
   A: chord([-1, 0, 2, 2, 2, 0], '001230'),
