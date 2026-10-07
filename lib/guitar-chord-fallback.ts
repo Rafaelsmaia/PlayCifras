@@ -49,9 +49,9 @@ const BARRE_MASTERS = {
   major: { frets: [1, 3, 3, 2, 1, 1], fingering: [1, 3, 4, 2, 1, 1] },
   minor: { frets: [1, 3, 3, 1, 1, 1], fingering: [1, 3, 4, 1, 1, 1] },
   dom7: { frets: [1, 3, 1, 2, 1, 1], fingering: [1, 3, 1, 2, 1, 1] },
-  maj7: { frets: [1, 3, 2, 2, 1, 1], fingering: [1, 3, 2, 2, 1, 1] },
+  maj7: { frets: [1, 3, 2, 2, 1, 1], fingering: [1, 4, 2, 3, 1, 1] },
   m7: { frets: [1, 3, 1, 1, 1, 1], fingering: [1, 3, 1, 1, 1, 1] },
-  sus4: { frets: [1, 3, 3, 3, 1, 1], fingering: [1, 3, 3, 4, 1, 1] },
+  sus4: { frets: [1, 3, 3, 3, 1, 1], fingering: [1, 2, 3, 4, 1, 1] },
   dim: { frets: [1, 2, 3, 1, 3, 1], fingering: [1, 2, 4, 1, 3, 1] },
   aug: { frets: [1, 4, 3, 2, 2, 1], fingering: [1, 4, 3, 2, 2, 1] }
 } as const
