@@ -99,6 +99,7 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
   Cadd9: chord([-1, 3, 2, 0, 3, 0], '032040'),
   Fadd9: chord([1, 3, 3, 2, 1, 3], '123114', { barre: true, barreFret: 1 }),
   F2: chord([1, 3, 3, 2, 1, 3], '123114', { barre: true, barreFret: 1 }),
+  F9: chord([-1, -1, 3, 2, 1, 3], '003214'),
   Bbadd9: chord([1, 1, 3, 3, 1, 1], '113411', { barre: true, barreFret: 1 }),
   Bb2: chord([1, 1, 3, 3, 1, 1], '113411', { barre: true, barreFret: 1 }),
   Aadd9: chord([-1, 0, 2, 4, 2, 0], '001320'),
