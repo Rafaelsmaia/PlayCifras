@@ -502,7 +502,7 @@ const DG_PREFS = {
   rtTrack: ['playcifras.rt.track', '4'],
 }
 /** Ajudante com /render-rhythm (PNG) e quadro do tamanho da sequência. */
-const HELPER_MIN_VERSION = 3
+const HELPER_MIN_VERSION = 4
 const DG_FPS = 30
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
 const DG_TAIL_SEC = 4
@@ -1128,8 +1128,39 @@ async function frameSizeOf(sequence) {
   return { width: 1080, height: 1920 }
 }
 
-/** POST no ajudante de render; traduz ajudante parado/antigo em instruções. */
-async function callHelper(route, body) {
+/** Formata o progresso do ajudante para a barra de status. */
+function formatHelperProgress(p) {
+  const pct = Math.max(0, Math.min(100, Math.round(Number(p.percent) || 0)))
+  const phase =
+    p.phase === 'preparando'
+      ? 'Preparando'
+      : p.phase === 'renderizando'
+        ? 'Renderizando'
+        : p.phase === 'cache'
+          ? 'Cache'
+          : 'Gerando'
+  const label = p.label ? ` · ${p.label}` : ''
+  return `${phase} ${pct}%${label}`
+}
+
+/**
+ * POST no ajudante de render; traduz ajudante parado/antigo em instruções.
+ * Se `onProgress` for passado, consulta GET /progress enquanto o POST não termina.
+ */
+async function callHelper(route, body, onProgress) {
+  let poll = null
+  if (typeof onProgress === 'function') {
+    poll = setInterval(async () => {
+      try {
+        const r = await fetch(`${getHelperUrl()}/progress`)
+        if (!r.ok) return
+        const p = await parseJsonResponse(r)
+        if (p && (p.busy || p.percent > 0)) onProgress(p)
+      } catch {
+        /* ajudante ocupado ou antigo */
+      }
+    }, 400)
+  }
   let res
   try {
     res = await fetch(`${getHelperUrl()}${route}`, {
@@ -1138,8 +1169,10 @@ async function callHelper(route, body) {
       body: JSON.stringify(body),
     })
   } catch {
+    if (poll) clearInterval(poll)
     throw new Error(HELPER_OFFLINE_MSG)
   }
+  if (poll) clearInterval(poll)
   const data = await parseJsonResponse(res)
   if (res.status === 404) throw new Error(HELPER_OUTDATED_MSG)
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
@@ -1189,15 +1222,19 @@ async function renderDiagramsAndPlace() {
 
   try {
     const { project, sequence } = await getActiveSequence()
-    dgStatus('Renderizando animação (pode demorar)…')
-    const data = await callHelper('/render-diagrams', {
-      marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
-      endSec: dg.endSec,
-      fps: DG_FPS,
-      slug: dgSource() === 'free' ? 'sequencia-livre' : dg.song ? dg.song.slug : undefined,
-      siteUrl: getSiteUrl(),
-      ...(await frameSizeOf(sequence)),
-    })
+    dgStatus('Renderizando animação… 0%')
+    const data = await callHelper(
+      '/render-diagrams',
+      {
+        marks: visible.map((r) => ({ t: r.t, chord: r.chord })),
+        endSec: dg.endSec,
+        fps: DG_FPS,
+        slug: dgSource() === 'free' ? 'sequencia-livre' : dg.song ? dg.song.slug : undefined,
+        siteUrl: getSiteUrl(),
+        ...(await frameSizeOf(sequence)),
+      },
+      (p) => dgStatus(formatHelperProgress(p))
+    )
 
     dgStatus(data.cached ? 'Cache OK — importando…' : 'Render OK — importando…')
     const trackIndex = Math.max(0, Math.floor(dgNumber('dg-track', 2)) - 1)
@@ -1462,17 +1499,21 @@ async function renderLyricsAndPlace() {
 
   try {
     const { project, sequence } = await getActiveSequence()
-    lyStatus('Renderizando letra (pode demorar)…')
-    const data = await callHelper('/render-lyrics', {
-      screens: rows.map((r) => ({
-        t: r.t,
-        lines: r.lines.map((l) => ({ text: l.text, chords: l.chords })),
-      })),
-      endSec: ly.endSec,
-      fps: DG_FPS,
-      slug: dg.song ? dg.song.slug : undefined,
-      ...(await frameSizeOf(sequence)),
-    })
+    lyStatus('Renderizando letra… 0%')
+    const data = await callHelper(
+      '/render-lyrics',
+      {
+        screens: rows.map((r) => ({
+          t: r.t,
+          lines: r.lines.map((l) => ({ text: l.text, chords: l.chords })),
+        })),
+        endSec: ly.endSec,
+        fps: DG_FPS,
+        slug: dg.song ? dg.song.slug : undefined,
+        ...(await frameSizeOf(sequence)),
+      },
+      (p) => lyStatus(formatHelperProgress(p))
+    )
 
     lyStatus(data.cached ? 'Cache OK — importando…' : 'Render OK — importando…')
     const trackIndex = Math.max(0, Math.floor(dgNumber('ly-track', 3)) - 1)
@@ -1673,14 +1714,18 @@ async function renderRhythmAndPlace() {
     let durationSec = typed > 0 ? typed : ((await sequenceEndSec(sequence)) || 0) - startSec
     if (!(durationSec > 0.1)) durationSec = RT_FALLBACK_SEC
 
-    rtStatus('Gerando imagem…')
+    rtStatus('Gerando ritmo… 0%')
     const height = Math.min(95, Math.max(5, dgNumber('rt-height', 80)))
-    const data = await callHelper('/render-rhythm', {
-      strokes: rt.strokes,
-      label: $('rt-label').value,
-      centerY: height / 100,
-      ...(await frameSizeOf(sequence)),
-    })
+    const data = await callHelper(
+      '/render-rhythm',
+      {
+        strokes: rt.strokes,
+        label: $('rt-label').value,
+        centerY: height / 100,
+        ...(await frameSizeOf(sequence)),
+      },
+      (p) => rtStatus(formatHelperProgress(p))
+    )
 
     rtStatus('Importando…')
     const trackIndex = Math.max(0, Math.floor(dgNumber('rt-track', 4)) - 1)

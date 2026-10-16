@@ -126,6 +126,7 @@ Sem **Duração**, a imagem vai até o fim da sequência. Se o Premiere não ace
 | Ajudante `POST http://127.0.0.1:3917/render-diagrams` | `{ marks: [{t, chord}], endSec, siteUrl, width, height }` → `.mov` + `startSec` |
 | Ajudante `POST http://127.0.0.1:3917/render-lyrics` | `{ screens: [{t, lines}], endSec, width, height }` → `.mov` + `startSec` |
 | Ajudante `POST http://127.0.0.1:3917/render-rhythm` | `{ strokes: ['down'\|'up'], label, centerY, width, height }` → `.png` transparente |
+| Ajudante `GET http://127.0.0.1:3917/progress` | `{ busy, percent, phase, label }` — progresso do render atual (v4+) |
 
 ## CLI
 

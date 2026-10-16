@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { bundle } from '@remotion/bundler'
 import { ensureBrowser, renderMedia, renderStill, selectComposition } from '@remotion/renderer'
 
-const HELPER_VERSION = 3
+const HELPER_VERSION = 4
 /** Mude quando o visual da composição mudar (invalida o cache). */
 const RENDER_VERSION = 5
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
@@ -26,6 +26,13 @@ const OUT_DIR =
   process.env.PLAYCIFRAS_OVERLAY_DIR ||
   path.join(os.homedir(), 'Documents', 'PlayCifras', 'Overlays')
 const LOG_FILE = path.join(ROOT, 'helper', 'helper.log')
+
+/** Progresso do render atual — o plugin consulta em GET /progress. */
+const progressState = { busy: false, percent: 0, phase: '', label: '' }
+
+function setProgress(partial) {
+  Object.assign(progressState, partial)
+}
 
 function log(msg) {
   const line = `[${new Date().toISOString()}] ${msg}\n`
@@ -195,11 +202,15 @@ async function renderOverlay({ compositionId, props, slug, force, label, still =
   const overlayPath = path.join(OUT_DIR, fileName)
   const result = { overlayPath, fileName }
 
+  setProgress({ busy: true, percent: 0, phase: 'preparando', label: String(label || '') })
+
   if (!force && (await exists(overlayPath))) {
     log(`Cache: ${fileName}`)
+    setProgress({ busy: false, percent: 100, phase: 'cache', label: String(label || '') })
     return { ...result, cached: true }
   }
 
+  setProgress({ busy: true, percent: 2, phase: 'preparando', label: String(label || '') })
   const serveUrl = await getServeUrl()
   const composition = await selectComposition({
     serveUrl,
@@ -209,6 +220,7 @@ async function renderOverlay({ compositionId, props, slug, force, label, still =
   const t0 = Date.now()
   if (still) {
     log(`Renderizando ${fileName} (${label}, ${props.width}×${props.height})…`)
+    setProgress({ busy: true, percent: 40, phase: 'renderizando', label: String(label || '') })
     await renderStill({
       composition,
       serveUrl,
@@ -219,9 +231,11 @@ async function renderOverlay({ compositionId, props, slug, force, label, still =
       output: overlayPath,
     })
     log(`Pronto em ${((Date.now() - t0) / 1000).toFixed(1)}s: ${overlayPath}`)
+    setProgress({ busy: false, percent: 100, phase: 'pronto', label: String(label || '') })
     return { ...result, cached: false }
   }
   log(`Renderizando ${fileName} (${props.durationSec}s, ${label}, ${props.width}×${props.height})…`)
+  setProgress({ busy: true, percent: 5, phase: 'renderizando', label: String(label || '') })
   await renderMedia({
     composition,
     serveUrl,
@@ -233,8 +247,13 @@ async function renderOverlay({ compositionId, props, slug, force, label, still =
     muted: true,
     overwrite: true,
     outputLocation: overlayPath,
+    onProgress: ({ progress }) => {
+      const pct = Math.max(5, Math.min(99, Math.round(Number(progress) * 100)))
+      setProgress({ busy: true, percent: pct, phase: 'renderizando', label: String(label || '') })
+    },
   })
   log(`Pronto em ${((Date.now() - t0) / 1000).toFixed(1)}s: ${overlayPath}`)
+  setProgress({ busy: false, percent: 100, phase: 'pronto', label: String(label || '') })
   return { ...result, cached: false }
 }
 
@@ -273,6 +292,10 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true, version: HELPER_VERSION, outDir: OUT_DIR })
   }
 
+  if (req.method === 'GET' && url.pathname === '/progress') {
+    return send(res, 200, { ok: true, ...progressState })
+  }
+
   const routes = {
     '/render-diagrams': renderDiagrams,
     '/render-lyrics': renderLyrics,
@@ -281,7 +304,19 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && routes[url.pathname]) {
     try {
       const body = await readJson(req)
-      const result = await enqueue(() => routes[url.pathname](body))
+      const result = await enqueue(async () => {
+        try {
+          return await routes[url.pathname](body)
+        } catch (err) {
+          setProgress({
+            busy: false,
+            percent: 0,
+            phase: 'erro',
+            label: err instanceof Error ? err.message : String(err),
+          })
+          throw err
+        }
+      })
       return send(res, 200, { ok: true, ...result })
     } catch (err) {
       log(`Erro: ${err && err.stack ? err.stack : err}`)
