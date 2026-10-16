@@ -104,7 +104,7 @@ function frameSize(body) {
 
 /** Overlay começa LEAD_IN antes do 1º evento; tempos ficam relativos a esse início. */
 function timing(body, events) {
-  const fps = Math.min(60, Math.max(12, Math.round(Number(body.fps) || 30)))
+  const fps = Math.min(60, Math.max(12, Math.round(Number(body.fps) || 24)))
   const startSec = Math.max(0, events[0].t - LEAD_IN_SEC)
   const lastRel = events[events.length - 1].t - startSec
   const durationSec = round3(Math.max(Number(body.endSec) - startSec || 0, lastRel + 1))

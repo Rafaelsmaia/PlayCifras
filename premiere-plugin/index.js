@@ -503,7 +503,7 @@ const DG_PREFS = {
 }
 /** Ajudante com /render-rhythm (PNG) e quadro do tamanho da sequência. */
 const HELPER_MIN_VERSION = 4
-const DG_FPS = 30
+const DG_FPS = 24
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
 const DG_TAIL_SEC = 4
 const TICKS_PER_SECOND = 254016000000
