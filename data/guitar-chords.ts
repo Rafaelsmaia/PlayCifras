@@ -68,6 +68,7 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
 
   // --- m7 / 7M (causa do bug Tempo Perdido) ---
   Am7: chord([-1, 0, 2, 0, 1, 0], '002010'),
+  Am9: chord([-1, 0, 2, 4, 1, 0], '002310'),
   Bm7: chord([-1, 2, 0, 2, 0, 2], '010203'),
   Cm7: chord([-1, 3, 5, 3, 4, 3], '013121', { barre: true, barreFret: 3 }),
   Dm7: chord([-1, -1, 0, 2, 1, 1], '000211'),
@@ -92,6 +93,7 @@ export const CURATED_GUITAR_CHORDS: Record<string, GuitarChordShape> = {
   Asus4: chord([-1, 0, 2, 2, 3, 0], '001230'),
   Esus4: chord([0, 2, 2, 2, 0, 0], '023400'),
   Csus4: chord([-1, 3, 3, 0, 1, 1], '034011'),
+  Gsus4: chord([3, 5, 5, 5, 3, 3], '134211', { barre: true, barreFret: 3 }),
   A4: chord([-1, 0, 2, 2, 3, 0], '001230'),
   B4: chord([-1, 2, 4, 4, 0, 0], '013400'),
   'B4/F#': chord([2, -1, 4, 4, 4, 0], '102340'),
