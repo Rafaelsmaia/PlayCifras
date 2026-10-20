@@ -94,6 +94,8 @@ Overlay transparente (`.mov` ProRes 4444) no estilo Cifra Club: linhas tracejada
 3. **Marcadores** (padrão): toque e aperte **M** em cada coluna com notas (use a cor escolhida; padrão roxo). **Click/BPM**: um marcador no 1º tempo + BPM + tempos por coluna.
 4. **Ler marcadores** → confira a lista → **Gerar tablatura e colocar na timeline** (padrão V5).
 
+A tab **não encolhe** quando é longa: o `.mov` fica mais largo, no tamanho fixo das casas. No Premiere, desmarque **Ajustar ao tamanho do quadro** e anime a **Posição** para deslizar.
+
 Atualize o ajudante depois do `git pull`: `npm run helper:install` (versão ≥ 5).
 
 ## Fluxo diário (Shorts)

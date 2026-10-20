@@ -1818,10 +1818,16 @@ function parseTabInput(raw) {
       return next
     })
     if (!columns.length) throw new Error('JSON sem colunas')
-    return {
-      columns,
-      chords: Array.isArray(data.chords) ? data.chords.map((c) => String(c || '')) : [],
-    }
+    const packed = []
+    const packedChords = []
+    const rawChords = Array.isArray(data.chords) ? data.chords : []
+    columns.forEach((col, i) => {
+      if (!columnHasNotes(col)) return
+      packed.push(col)
+      packedChords.push(String(rawChords[i] || ''))
+    })
+    if (!packed.length) throw new Error('JSON sem casas')
+    return { columns: packed, chords: packedChords }
   }
   return parseAsciiTabPlugin(text)
 }
@@ -1911,9 +1917,15 @@ function loadTabFromInput() {
     tb.columns = parsed.columns
     tb.chords = parsed.chords
     tb.rows = []
-    savePref('tbInput', $('tb-input').value)
+    const compact = JSON.stringify({
+      version: 1,
+      columns: tb.columns,
+      ...(tb.chords.some(Boolean) ? { chords: tb.chords } : {}),
+    })
+    $('tb-input').value = compact
+    savePref('tbInput', compact)
     const n = soundingCols(tb.columns).length
-    $('tb-info').textContent = `${tb.columns.length} colunas · ${n} com notas`
+    $('tb-info').textContent = `${n} colunas com notas — cole outra tab para trocar`
     tbStatus('Tab carregada. Leia os marcadores.')
     renderTbRows()
     validateTb()
@@ -1970,8 +1982,18 @@ async function readTbMarkers() {
   try {
     const { sequence } = await getActiveSequence()
     const seqEnd = await sequenceEndSec(sequence)
-    const markers = await readColoredMarkers(sequence, tbColor())
-    if (!markers.length) throw new Error('Nenhum marcador da cor escolhida')
+    const color = tbColor()
+    const { markers, fromClips } = await readColoredMarkers(sequence, color)
+    if (!markers.length) {
+      const any = (await readColoredMarkers(sequence, null)).markers
+      const found = Array.from(new Set(any.map((m) => COLOR_NAMES[m.color] || `cor ${m.color}`)))
+      throw new Error(
+        any.length
+          ? `Nenhum marcador ${COLOR_NAMES[color]}; achei ${any.length} de outra cor (${found.join(', ')}). Troque a cor no painel.`
+          : `Nenhum marcador ${COLOR_NAMES[color]} na sequência nem nos clipes`
+      )
+    }
+    const origin = fromClips ? ' (do clipe)' : ''
 
     const cols = soundingCols(tb.columns)
     if (!cols.length) throw new Error('Tab sem casas')
@@ -1987,7 +2009,7 @@ async function readTbMarkers() {
         return row
       })
       tb.endSec = seqEnd != null ? Math.min(t, seqEnd) : t + 2
-      tbStatus(`Click: ${tb.rows.length} colunas a partir de ${fmtTime(markers[0].t)}`)
+      tbStatus(`Click: ${tb.rows.length} colunas a partir de ${fmtTime(markers[0].t)}${origin}`)
     } else {
       const changes = markers.filter((m) => !END_RE.test(m.name || ''))
       const endMarker = markers.find((m) => END_RE.test(m.name || ''))
@@ -2006,7 +2028,7 @@ async function readTbMarkers() {
           `${tb.rows.length}/${cols.length} colunas — faltam ${cols.length - changes.length} marcador(es)`
         )
       } else {
-        tbStatus(`${tb.rows.length} colunas sincronizadas`)
+        tbStatus(`${tb.rows.length} colunas sincronizadas${origin}`)
       }
     }
     renderTbRows()

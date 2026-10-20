@@ -15,7 +15,7 @@ import { ensureBrowser, renderMedia, renderStill, selectComposition } from '@rem
 
 const HELPER_VERSION = 5
 /** Mude quando o visual da composição mudar (invalida o cache). */
-const RENDER_VERSION = 7
+const RENDER_VERSION = 8
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
 const DEFAULT_SITE = 'https://playcifras.vercel.app'
 /** Tempo antes do 1º marcador para o card entrar. */
@@ -216,6 +216,11 @@ async function renderTab(body) {
 
   const { fps, startSec, durationSec } = timing(body, marks)
   const cy = Number(body.centerY)
+  const frame = frameSize(body)
+  const u = Math.min(frame.width, frame.height) / 1080
+  const even = (n) => Math.max(2, Math.round(n / 2) * 2)
+  const staffW = Math.ceil((14 * 2 + 22) * u + columns.length * 34 * u + 28 * u + 48 * u)
+  const width = even(Math.min(16384, Math.max(frame.width, staffW)))
   const props = {
     columns,
     chords,
@@ -223,7 +228,9 @@ async function renderTab(body) {
     durationSec,
     fps,
     centerY: Number.isFinite(cy) ? Math.min(0.95, Math.max(0.05, cy)) : undefined,
-    ...frameSize(body),
+    layoutWidth: frame.width,
+    width,
+    height: frame.height,
   }
   const result = await renderOverlay({
     compositionId: 'TabOverlay',

@@ -48,19 +48,26 @@ export function toTabDocument(input: {
   columns: TabColumn[]
   chords?: string[]
 }): TabDocument {
-  return {
-    version: 1,
-    title: (input.title || '').trim() || undefined,
-    chords: input.chords?.map((c) => String(c || '').trim()),
-    columns: input.columns.map((col) => {
-      const next = emptyColumn()
-      for (let s = 0; s < TAB_STRING_COUNT; s++) {
-        const v = col[s]
-        next[s] = v == null || !Number.isFinite(Number(v)) ? null : Math.trunc(Number(v))
-      }
-      return next
-    }),
-  }
+  const columns: TabColumn[] = []
+  const chords: string[] = []
+  input.columns.forEach((col, i) => {
+    const next = emptyColumn()
+    let any = false
+    for (let s = 0; s < TAB_STRING_COUNT; s++) {
+      const v = col[s]
+      if (v == null || !Number.isFinite(Number(v))) continue
+      next[s] = Math.trunc(Number(v))
+      any = true
+    }
+    if (!any) return
+    columns.push(next)
+    chords.push(String(input.chords?.[i] || '').trim())
+  })
+  const doc: TabDocument = { version: 1, columns }
+  const title = (input.title || '').trim()
+  if (title) doc.title = title
+  if (chords.some(Boolean)) doc.chords = chords
+  return doc
 }
 
 export function parseTabJson(raw: string): TabDocument {

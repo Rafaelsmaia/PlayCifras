@@ -264,18 +264,11 @@
 
       <section id="view-tab" class="panel hidden">
         <label class="field">
-          Tablatura (JSON do montador ou ASCII)
+          Colar tab (site ou ASCII)
           <textarea
             id="tb-input"
-            rows="8"
-            placeholder='Cole o JSON do montador (/dicionario → Montador de tablaturas) ou uma tab ASCII:
-Em
-e|-------0--|
-B|-----0----|
-G|---0------|
-D|-2--------|
-A|----------|
-E|----------|'
+            rows="4"
+            placeholder="Cole o JSON do montador (Copiar JSON) ou 6 linhas de tab ASCII e clique em Carregar tab."
           ></textarea>
         </label>
         <div class="row tight">
@@ -330,8 +323,9 @@ E|----------|'
 
         <p id="tb-hint" class="hint">
           No modo marcadores: toque e aperte M em cada coluna da tab (na ordem). As casas
-          passam de branco para roxo no tempo do marcador. No modo BPM: um marcador no 1º
-          tempo e o resto segue o BPM.
+          passam de branco para roxo. Tab longa sai no mesmo tamanho (o .mov fica mais
+          largo) — no Premiere desmarque “Ajustar ao tamanho do quadro” e anime a Posição
+          para deslizar.
         </p>
 
         <div class="row tight">

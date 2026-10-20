@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { AbsoluteFill, useCurrentFrame } from 'remotion'
 import type { TabOverlayProps } from './diagram-overlay-types'
-import { frameOf, LAYOUT } from './overlay-layout'
+import { DEFAULT_FRAME, frameOf, LAYOUT } from './overlay-layout'
 import {
   lerpTabNoteColor,
   TAB_BADGE_FILL,
@@ -59,7 +59,9 @@ function progressAt(marks: TabOverlayProps['marks'], col: number, timeSec: numbe
 /** Overlay transparente de tablatura com sync por coluna (branco → roxo). */
 export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
   const frame = useCurrentFrame()
-  const { width, height, u } = frameOf(props)
+  const { height } = frameOf(props)
+  const layoutW = props.layoutWidth || DEFAULT_FRAME.width
+  const u = Math.min(layoutW, height) / DEFAULT_FRAME.width
   const timeSec = frame / Math.max(1, props.fps)
   const columns: TabColumn[] = props.columns?.length
     ? props.columns
@@ -80,7 +82,6 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
   const staffW = padLeft + colCount * colGap + padRight
   const staffH = topY + gridH + 20 * u
   const noteFont = 20 * u
-  const scale = Math.min(1, (width * 0.92) / staffW)
   const shadow = `0 ${2 * u}px ${8 * u}px rgba(0,0,0,0.55)`
 
   const progresses = useMemo(
@@ -93,9 +94,9 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
       <div
         style={{
           position: 'absolute',
-          left: width / 2,
+          left: 24 * u,
           top: height * centerY,
-          transform: `translate(-50%, -50%) scale(${scale})`,
+          transform: 'translateY(-50%)',
           width: staffW,
           height: staffH,
         }}

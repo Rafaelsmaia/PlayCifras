@@ -33,8 +33,8 @@ const NOTE_SIZE_MIN = 11
 const NOTE_SIZE_MAX = 22
 const NOTE_SIZE_DEFAULT = 16
 const COLS_MIN = 4
-const COLS_MAX = 48
 const COLS_DEFAULT = 12
+const COLS_BATCH = 8
 const FRET_MAX = 24
 
 type Props = {
@@ -109,20 +109,20 @@ export default function TabBuilder({ className }: Props) {
     })
   }
 
-  function addColumn() {
-    if (columns.length >= COLS_MAX) return
+  function addColumns(count = 1) {
+    const n = Math.max(1, Math.floor(count))
     setColumns((prev) => {
       const next = cloneColumns(prev)
       const at = Math.min(selectedCol + 1, next.length)
-      next.splice(at, 0, emptyColumn())
+      next.splice(at, 0, ...Array.from({ length: n }, () => emptyColumn()))
       setChords((ch) => {
         const c = [...ch]
-        c.splice(at, 0, '')
+        c.splice(at, 0, ...Array.from({ length: n }, () => ''))
         return c
       })
       return next
     })
-    setSelectedCol((c) => Math.min(c + 1, COLS_MAX - 1))
+    setSelectedCol((c) => c + n)
   }
 
   function removeColumn() {
@@ -180,10 +180,10 @@ export default function TabBuilder({ className }: Props) {
 
   async function copyJson() {
     const doc = toTabDocument({ title, columns, chords })
-    const text = JSON.stringify(doc, null, 2)
+    const text = JSON.stringify(doc)
     try {
       await navigator.clipboard.writeText(text)
-      setCopyMsg('JSON copiado — cole na aba Tablatura do plugin Premiere.')
+      setCopyMsg('Tab copiada — cole no plugin Premiere e clique em Carregar tab.')
     } catch {
       prompt('Copie o JSON:', text)
     }
@@ -380,12 +380,19 @@ export default function TabBuilder({ className }: Props) {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={addColumn}
-                disabled={columns.length >= COLS_MAX}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                onClick={() => addColumns(1)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Coluna
+              </button>
+              <button
+                type="button"
+                onClick={() => addColumns(COLS_BATCH)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                +{COLS_BATCH} colunas
               </button>
               <button
                 type="button"

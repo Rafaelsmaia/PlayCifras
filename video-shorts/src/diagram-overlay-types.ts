@@ -74,6 +74,11 @@ export type TabOverlayProps = {
   fps: number
   width?: number
   height?: number
+  /**
+   * Largura da sequência (para escala fixa).
+   * O canvas (`width`) pode ser maior que a tab longa.
+   */
+  layoutWidth?: number
   /** Centro vertical (fração). Padrão ~0.78. */
   centerY?: number
 }

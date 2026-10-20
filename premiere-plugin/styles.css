@@ -313,6 +313,11 @@ textarea {
   font-family: Consolas, monospace;
 }
 
+#tb-input {
+  max-height: 96px;
+  resize: vertical;
+}
+
 .check {
   display: flex;
   align-items: center;
