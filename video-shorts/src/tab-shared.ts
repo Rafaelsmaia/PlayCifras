@@ -7,7 +7,7 @@ export type TabColumn = (number | null)[]
 
 export const TAB_NOTE_PENDING = '#ffffff'
 export const TAB_NOTE_PLAYED = '#f33aff'
-export const TAB_BADGE_FILL = '#e8913a'
+export const TAB_BADGE_FILL = '#f33aff'
 export const TAB_LINE = 'rgba(255,255,255,0.85)'
 
 export function lerpTabNoteColor(progress: number): string {
