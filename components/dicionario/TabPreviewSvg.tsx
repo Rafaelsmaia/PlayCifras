@@ -1,59 +1,93 @@
 'use client'
 
 import { forwardRef } from 'react'
+import {
+  TAB_BADGE_FILL,
+  TAB_LINE,
+  TAB_NOTE_PENDING,
+  TAB_NOTE_PLAYED,
+  TAB_STRING_COUNT,
+  TAB_STRING_LABELS,
+  type TabColumn,
+} from '@/lib/tab-format'
 
-/** Cordas no formato padrão de tablatura (aguda → grave). */
-export const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'] as const
-export const TAB_STRING_COUNT = TAB_STRING_LABELS.length
-
-export type TabColumn = (number | null)[]
+export { TAB_STRING_LABELS, TAB_STRING_COUNT }
+export type { TabColumn }
 
 export type TabPreviewSvgProps = {
-  title: string
+  title?: string
   columns: TabColumn[]
-  /** Intervalo de colunas para desenhar barra de compasso (0 = desligado). */
+  /** Acorde acima de cada coluna. */
+  chords?: string[]
+  /** Intervalo de colunas para barra de compasso (0 = off). */
   barEvery?: number
   titleFontSize?: number
   titleFontFamily?: string
   noteFontSize?: number
+  /**
+   * Progresso 0–1 por coluna (sync preview).
+   * Sem array = todas brancas; com array = interpola para roxo.
+   */
+  columnProgress?: number[]
+  /** Fundo transparente (export vídeo) vs escuro (preview no site). */
+  transparent?: boolean
   className?: string
 }
 
-const LINE = '#222'
 const MUTE = '×'
 
+function noteLabel(v: number | null): string {
+  if (v == null) return ''
+  if (v < 0) return MUTE
+  return String(v)
+}
+
+function mixColor(progress: number): string {
+  const p = Math.min(1, Math.max(0, progress))
+  const parse = (hex: string) => ({
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  })
+  const a = parse(TAB_NOTE_PENDING)
+  const b = parse(TAB_NOTE_PLAYED)
+  return `rgb(${Math.round(a.r + (b.r - a.r) * p)},${Math.round(a.g + (b.g - a.g) * p)},${Math.round(a.b + (b.b - a.b) * p)})`
+}
+
 /**
- * SVG de tablatura para preview e export PNG (vídeos).
+ * Tablatura estilo Cifra Club: linhas tracejadas, badges das cordas, casas em mono.
  */
 const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
   function TabPreviewSvg(
     {
-      title,
+      title = '',
       columns,
+      chords,
       barEvery = 0,
-      titleFontSize = 16,
+      titleFontSize = 18,
       titleFontFamily = 'var(--font-nunito), Nunito, system-ui, sans-serif',
-      noteFontSize = 14,
-      className
+      noteFontSize = 16,
+      columnProgress,
+      transparent = false,
+      className,
     },
     ref
   ) {
     const colCount = Math.max(columns.length, 1)
-    const padX = 36
-    const padRight = 16
-    const titleH = title.trim() ? titleFontSize + 14 : 8
-    const stringGap = 28
-    const colGap = 28
-    const topY = titleH + 8
+    const badgeR = 11
+    const padLeft = badgeR * 2 + 18
+    const padRight = 20
+    const chordH = 22
+    const titleH = title.trim() ? titleFontSize + 10 : 0
+    const stringGap = 26
+    const colGap = 26
+    const topY = titleH + chordH + 6
     const gridH = (TAB_STRING_COUNT - 1) * stringGap
-    const width = padX + colCount * colGap + padRight
-    const height = topY + gridH + 20
-
-    function noteLabel(v: number | null): string {
-      if (v == null) return ''
-      if (v < 0) return MUTE
-      return String(v)
-    }
+    const width = padLeft + colCount * colGap + padRight
+    const height = topY + gridH + 16
+    const lineStart = padLeft
+    const lineEnd = width - padRight
+    const mono = 'var(--font-roboto-mono), "Roboto Mono", ui-monospace, monospace'
 
     return (
       <svg
@@ -66,14 +100,16 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
         role="img"
         aria-label={title.trim() || 'Tablatura'}
       >
-        <rect width={width} height={height} fill="#ffffff" />
+        {!transparent ? (
+          <rect width={width} height={height} fill="#1a1a1a" rx={8} />
+        ) : null}
 
         {title.trim() ? (
           <text
             x={width / 2}
-            y={titleFontSize + 2}
+            y={titleFontSize}
             textAnchor="middle"
-            fill={LINE}
+            fill="#ffffff"
             fontSize={titleFontSize}
             fontWeight="700"
             fontFamily={titleFontFamily}
@@ -86,83 +122,103 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
           const y = topY + s * stringGap
           return (
             <g key={`str-${s}`}>
+              <circle cx={badgeR + 4} cy={y} r={badgeR} fill={TAB_BADGE_FILL} />
               <text
-                x={padX - 10}
+                x={badgeR + 4}
                 y={y + 4}
-                textAnchor="end"
-                fill="#666"
+                textAnchor="middle"
+                fill="#111"
                 fontSize={11}
-                fontWeight="700"
-                fontFamily="var(--font-roboto-mono), 'Roboto Mono', monospace"
+                fontWeight="800"
+                fontFamily={mono}
               >
                 {label}
               </text>
               <line
-                x1={padX}
+                x1={lineStart}
                 y1={y}
-                x2={width - padRight}
+                x2={lineEnd}
                 y2={y}
-                stroke={LINE}
-                strokeWidth={1.25}
+                stroke={TAB_LINE}
+                strokeWidth={1.4}
+                strokeDasharray="5 5"
+                strokeLinecap="round"
               />
             </g>
           )
         })}
 
         {barEvery > 0
-          ? Array.from(
-              { length: Math.floor(colCount / barEvery) },
-              (_, i) => {
-                const afterCol = (i + 1) * barEvery
-                if (afterCol >= colCount) return null
-                const x = padX + afterCol * colGap - colGap / 2
-                return (
-                  <line
-                    key={`bar-${i}`}
-                    x1={x}
-                    y1={topY}
-                    x2={x}
-                    y2={topY + gridH}
-                    stroke={LINE}
-                    strokeWidth={1.5}
-                  />
-                )
-              }
-            )
+          ? Array.from({ length: Math.floor(colCount / barEvery) }, (_, i) => {
+              const afterCol = (i + 1) * barEvery
+              if (afterCol >= colCount) return null
+              const x = padLeft + afterCol * colGap - colGap / 2
+              return (
+                <line
+                  key={`bar-${i}`}
+                  x1={x}
+                  y1={topY}
+                  x2={x}
+                  y2={topY + gridH}
+                  stroke="rgba(255,255,255,0.45)"
+                  strokeWidth={1.5}
+                />
+              )
+            })
           : null}
 
         {columns.map((col, c) => {
-          const x = padX + c * colGap + colGap / 2
-          return TAB_STRING_LABELS.map((_, s) => {
-            const label = noteLabel(col[s] ?? null)
-            if (!label) return null
-            const y = topY + s * stringGap
-            const digits = label.length
-            const bgW = Math.max(14, digits * 9)
-            return (
-              <g key={`n-${c}-${s}`}>
-                <rect
-                  x={x - bgW / 2}
-                  y={y - noteFontSize / 2 - 1}
-                  width={bgW}
-                  height={noteFontSize + 4}
-                  fill="#ffffff"
-                  rx={2}
-                />
+          const x = padLeft + c * colGap + colGap / 2
+          const chord = (chords?.[c] || '').trim()
+          const progress = columnProgress?.[c] ?? 0
+          const color = mixColor(progress)
+          return (
+            <g key={`col-${c}`}>
+              {chord ? (
                 <text
                   x={x}
-                  y={y + noteFontSize / 3}
+                  y={titleH + chordH - 4}
                   textAnchor="middle"
-                  fill={LINE}
-                  fontSize={noteFontSize}
+                  fill="#ffffff"
+                  fontSize={13}
                   fontWeight="700"
-                  fontFamily="var(--font-roboto-mono), 'Roboto Mono', monospace"
+                  fontFamily={titleFontFamily}
                 >
-                  {label}
+                  {chord}
                 </text>
-              </g>
-            )
-          })
+              ) : null}
+              {TAB_STRING_LABELS.map((_, s) => {
+                const label = noteLabel(col[s] ?? null)
+                if (!label) return null
+                const y = topY + s * stringGap
+                const digits = label.length
+                const bgW = Math.max(14, digits * 10)
+                return (
+                  <g key={`n-${c}-${s}`}>
+                    <rect
+                      x={x - bgW / 2}
+                      y={y - noteFontSize / 2 - 1}
+                      width={bgW}
+                      height={noteFontSize + 3}
+                      fill={transparent ? 'transparent' : '#1a1a1a'}
+                      rx={2}
+                    />
+                    <text
+                      x={x}
+                      y={y + noteFontSize / 3}
+                      textAnchor="middle"
+                      fill={color}
+                      fontSize={noteFontSize}
+                      fontWeight="700"
+                      fontFamily={mono}
+                    >
+                      {label}
+                    </text>
+                  </g>
+                )
+              })}
+            </g>
+          )
         })}
       </svg>
     )

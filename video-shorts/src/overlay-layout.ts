@@ -17,6 +17,8 @@ export const LAYOUT = {
   /** Centro do bloco "Ritmo:" + setas (centralizado na horizontal). */
   rhythmCenterY: 0.8,
   rhythmMaxWidth: 0.9,
+  /** Centro vertical da tablatura (parte inferior do quadro). */
+  tabCenterY: 0.78,
 }
 
 export function frameOf(p: { width?: number; height?: number }) {

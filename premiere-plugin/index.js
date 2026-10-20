@@ -500,9 +500,16 @@ const DG_PREFS = {
   rtLabel: ['playcifras.rt.label', 'Ritmo:'],
   rtHeight: ['playcifras.rt.height', '80'],
   rtTrack: ['playcifras.rt.track', '4'],
+  tbMode: ['playcifras.tb.mode', 'manual'],
+  tbColor: ['playcifras.tb.color', '2'],
+  tbBpm: ['playcifras.tb.bpm', '90'],
+  tbBeats: ['playcifras.tb.beats', '1'],
+  tbHeight: ['playcifras.tb.height', '78'],
+  tbTrack: ['playcifras.tb.track', '5'],
+  tbInput: ['playcifras.tb.input', ''],
 }
-/** Ajudante com /render-rhythm (PNG) e quadro do tamanho da sequência. */
-const HELPER_MIN_VERSION = 4
+/** Ajudante com /render-tab (tablatura animada branco→roxo). */
+const HELPER_MIN_VERSION = 5
 const DG_FPS = 24
 /** Sem marcador "fim": o último acorde fica na tela por este tempo. */
 const DG_TAIL_SEC = 4
@@ -611,7 +618,10 @@ function updateSequenceBox() {
 /** Busca de cifra é comum às abas Diagramas (se não for sequência livre) e Letra. */
 function updateSongBlock() {
   const tab = dg.tab
-  $('song-block').classList.toggle('hidden', tab === 'shorts' || tab === 'rhythm')
+  $('song-block').classList.toggle(
+    'hidden',
+    tab === 'shorts' || tab === 'rhythm' || tab === 'tab'
+  )
   $('dg-source-field').classList.toggle('hidden', tab !== 'diagrams')
   $('dg-song-source').classList.toggle('hidden', tab === 'diagrams' && dgSource() === 'free')
   const current = $('song-current')
@@ -697,6 +707,7 @@ function switchTab(name) {
     ['diagrams', 'view-diagrams'],
     ['lyrics', 'view-lyrics'],
     ['rhythm', 'view-rhythm'],
+    ['tab', 'view-tab'],
     ['shorts', 'view-main'],
   ]) {
     $(`tab-${tab}`).classList.toggle('active', tab === name)
@@ -1757,6 +1768,320 @@ function wireRhythm() {
   $('rt-render').addEventListener('click', () => renderRhythmAndPlace())
 }
 
+/* ---------- Tablatura (branco → roxo) ---------- */
+
+const tb = {
+  columns: [],
+  chords: [],
+  /** { t, col } */
+  rows: [],
+  endSec: null,
+}
+
+function tbStatus(msg) {
+  const el = $('tb-status')
+  if (el) el.textContent = msg || ''
+}
+
+function tbMode() {
+  return $('tb-mode').value === 'click' ? 'click' : 'manual'
+}
+
+function tbColor() {
+  return Number($('tb-color').value) || 0
+}
+
+function columnHasNotes(col) {
+  return (col || []).some((n) => n != null)
+}
+
+function soundingCols(columns) {
+  const out = []
+  columns.forEach((col, i) => {
+    if (columnHasNotes(col)) out.push(i)
+  })
+  return out
+}
+
+/** Parse JSON do montador ou tab ASCII simples. */
+function parseTabInput(raw) {
+  const text = String(raw || '').trim()
+  if (!text) throw new Error('Cole o JSON ou a tab ASCII')
+  if (text.startsWith('{')) {
+    const data = JSON.parse(text)
+    const columns = (data.columns || []).map((col) => {
+      const next = [null, null, null, null, null, null]
+      for (let s = 0; s < 6; s++) {
+        const v = col[s]
+        next[s] = v == null || v === '' ? null : Math.trunc(Number(v))
+      }
+      return next
+    })
+    if (!columns.length) throw new Error('JSON sem colunas')
+    return {
+      columns,
+      chords: Array.isArray(data.chords) ? data.chords.map((c) => String(c || '')) : [],
+    }
+  }
+  return parseAsciiTabPlugin(text)
+}
+
+function parseAsciiTabPlugin(text) {
+  const lines = text
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .filter((l) => l.trim())
+  const re = /^([eEbBgGdDaA])\s*[|:]\s*(.+)$/
+  const rows = []
+  const other = []
+  for (const line of lines) {
+    const m = re.exec(line.trim())
+    if (m) rows.push({ label: m[1], body: m[2].replace(/\|/g, '') })
+    else other.push(line)
+  }
+  if (rows.length < 6) throw new Error('Cole as 6 linhas e| B| G| D| A| E|')
+
+  const order = ['e', 'B', 'G', 'D', 'A', 'E']
+  const taken = new Set()
+  const bodies = []
+  for (const want of order) {
+    let idx = -1
+    if (want === 'e' || want === 'E') {
+      idx = rows.findIndex((r, i) => !taken.has(i) && (r.label === 'e' || r.label === 'E'))
+    } else {
+      idx = rows.findIndex(
+        (r, i) => !taken.has(i) && r.label.toLowerCase() === want.toLowerCase()
+      )
+    }
+    if (idx < 0) throw new Error(`Falta a corda ${want}`)
+    taken.add(idx)
+    bodies.push(rows[idx].body)
+  }
+
+  const width = Math.max(...bodies.map((b) => b.length), 1)
+  const skip = bodies.map(() => new Uint8Array(width))
+  const columns = []
+  const chords = []
+  const chordLine = other.length ? other[other.length - 1] : ''
+  const chordAt = Array.from({ length: width }, () => '')
+  if (chordLine && /[A-G]/.test(chordLine)) {
+    const cre =
+      /[A-G](?:#|b)?(?:maj|min|dim|aug|sus|add|m|M)?\d*(?:\/[A-G](?:#|b)?)?/g
+    let m
+    while ((m = cre.exec(chordLine))) {
+      chordAt[Math.min(width - 1, Math.max(0, m.index))] = m[0]
+    }
+  }
+
+  for (let x = 0; x < width; x++) {
+    const col = [null, null, null, null, null, null]
+    let any = false
+    for (let s = 0; s < 6; s++) {
+      if (skip[s][x]) continue
+      const ch = bodies[s][x] || '-'
+      if ('- |/hp'.includes(ch) || ch === ' ') continue
+      if (ch === 'x' || ch === 'X') {
+        col[s] = -1
+        any = true
+        continue
+      }
+      if (ch >= '0' && ch <= '9') {
+        let n = Number(ch)
+        const next = bodies[s][x + 1]
+        if (next >= '0' && next <= '9') {
+          n = n * 10 + Number(next)
+          skip[s][x + 1] = 1
+        }
+        col[s] = n
+        any = true
+      }
+    }
+    if (!any) continue
+    columns.push(col)
+    chords.push(chordAt[x] || '')
+  }
+  if (!columns.length) throw new Error('Nenhuma casa na tab')
+  return { columns, chords }
+}
+
+function loadTabFromInput() {
+  try {
+    const parsed = parseTabInput($('tb-input').value)
+    tb.columns = parsed.columns
+    tb.chords = parsed.chords
+    tb.rows = []
+    savePref('tbInput', $('tb-input').value)
+    const n = soundingCols(tb.columns).length
+    $('tb-info').textContent = `${tb.columns.length} colunas · ${n} com notas`
+    tbStatus('Tab carregada. Leia os marcadores.')
+    renderTbRows()
+    validateTb()
+  } catch (e) {
+    tb.columns = []
+    tb.chords = []
+    tb.rows = []
+    $('tb-info').textContent = ''
+    tbStatus(`Falha: ${e.message || e}`)
+    validateTb()
+  }
+}
+
+function updateTbModeUi() {
+  const click = tbMode() === 'click'
+  $('tb-click-opts').classList.toggle('hidden', !click)
+  $('tb-read').textContent = click ? 'Ler marcador inicial' : 'Ler marcadores'
+  const color = COLOR_NAMES[tbColor()]
+  $('tb-hint').textContent = click
+    ? `Coloque um marcador ${color} no 1º tempo. As colunas com notas avançam pelo BPM.`
+    : `Com o áudio sync, aperte M em cada coluna da tab (só marcadores ${color}). As casas passam de branco para roxo.`
+}
+
+function renderTbRows() {
+  const box = $('tb-rows')
+  if (!tb.rows.length) {
+    box.classList.add('hidden')
+    box.innerHTML = ''
+    return
+  }
+  box.classList.remove('hidden')
+  box.innerHTML = ''
+  tb.rows.forEach((row, i) => {
+    const el = document.createElement('div')
+    el.className = 'item'
+    const frets = (tb.columns[row.col] || [])
+      .map((v) => (v == null ? '-' : v < 0 ? 'x' : String(v)))
+      .join(' ')
+    el.innerHTML = `<div class="item-title">${i + 1}. col ${row.col + 1}${
+      tb.chords[row.col] ? ` · ${escapeHtml(tb.chords[row.col])}` : ''
+    }</div>
+      <div class="item-sub">${fmtTime(row.t)} · ${escapeHtml(frets)}</div>`
+    box.appendChild(el)
+  })
+}
+
+function validateTb() {
+  const ok = tb.columns.length > 0 && tb.rows.length > 0
+  $('tb-render').disabled = !ok || busy
+}
+
+async function readTbMarkers() {
+  if (!tb.columns.length) return tbStatus('Carregue a tab primeiro')
+  try {
+    const { sequence } = await getActiveSequence()
+    const seqEnd = await sequenceEndSec(sequence)
+    const markers = await readColoredMarkers(sequence, tbColor())
+    if (!markers.length) throw new Error('Nenhum marcador da cor escolhida')
+
+    const cols = soundingCols(tb.columns)
+    if (!cols.length) throw new Error('Tab sem casas')
+
+    if (tbMode() === 'click') {
+      const bpm = Math.max(40, Number($('tb-bpm').value) || 90)
+      const beats = Math.max(0.25, Number($('tb-beats').value) || 1)
+      const step = beats * (60 / bpm)
+      let t = markers[0].t
+      tb.rows = cols.map((col) => {
+        const row = { t, col }
+        t += step
+        return row
+      })
+      tb.endSec = seqEnd != null ? Math.min(t, seqEnd) : t + 2
+      tbStatus(`Click: ${tb.rows.length} colunas a partir de ${fmtTime(markers[0].t)}`)
+    } else {
+      const changes = markers.filter((m) => !END_RE.test(m.name || ''))
+      const endMarker = markers.find((m) => END_RE.test(m.name || ''))
+      tb.rows = changes.slice(0, cols.length).map((m, i) => ({
+        t: m.t,
+        col: cols[i],
+      }))
+      const last = tb.rows[tb.rows.length - 1]
+      tb.endSec = endMarker
+        ? endMarker.t
+        : last
+          ? last.t + DG_TAIL_SEC
+          : markers[0].t + DG_TAIL_SEC
+      if (changes.length < cols.length) {
+        tbStatus(
+          `${tb.rows.length}/${cols.length} colunas — faltam ${cols.length - changes.length} marcador(es)`
+        )
+      } else {
+        tbStatus(`${tb.rows.length} colunas sincronizadas`)
+      }
+    }
+    renderTbRows()
+    validateTb()
+  } catch (e) {
+    tbStatus(`Falha: ${e.message || e}`)
+  }
+}
+
+async function renderTabAndPlace() {
+  if (busy || !tb.rows.length || !tb.columns.length) return
+  busy = true
+  validateTb()
+  try {
+    const { project, sequence } = await getActiveSequence()
+    tbStatus('Renderizando tablatura… 0%')
+    const height = Math.min(95, Math.max(5, dgNumber('tb-height', 78)))
+    const data = await callHelper(
+      '/render-tab',
+      {
+        columns: tb.columns,
+        chords: tb.chords,
+        marks: tb.rows.map((r) => ({ t: r.t, col: r.col })),
+        endSec: tb.endSec,
+        fps: DG_FPS,
+        centerY: height / 100,
+        slug: 'tablatura',
+        ...(await frameSizeOf(sequence)),
+      },
+      (p) => tbStatus(formatHelperProgress(p))
+    )
+    tbStatus(data.cached ? 'Cache OK — importando…' : 'Render OK — importando…')
+    const trackIndex = Math.max(0, Math.floor(dgNumber('tb-track', 5)) - 1)
+    const fallback = await placeRendered(project, sequence, data, trackIndex, 'tablatura')
+    tbStatus(
+      fallback ||
+        `Tablatura em V${trackIndex + 1} a partir de ${fmtTime(data.startSec)} (branco→roxo)`
+    )
+  } catch (e) {
+    tbStatus(`Falha: ${e.message || e}`)
+  } finally {
+    busy = false
+    validateTb()
+  }
+}
+
+function wireTab() {
+  $('tb-input').value = loadPref('tbInput')
+  $('tb-mode').value = loadPref('tbMode')
+  $('tb-color').value = loadPref('tbColor')
+  $('tb-bpm').value = loadPref('tbBpm')
+  $('tb-beats').value = loadPref('tbBeats')
+  $('tb-height').value = loadPref('tbHeight')
+  $('tb-track').value = loadPref('tbTrack')
+  updateTbModeUi()
+
+  $('tab-tab').addEventListener('click', () => switchTab('tab'))
+  $('tb-parse').addEventListener('click', () => loadTabFromInput())
+  $('tb-mode').addEventListener('change', () => {
+    savePref('tbMode', tbMode())
+    updateTbModeUi()
+  })
+  $('tb-color').addEventListener('change', () => {
+    savePref('tbColor', String(tbColor()))
+    updateTbModeUi()
+  })
+  $('tb-bpm').addEventListener('change', () => savePref('tbBpm', $('tb-bpm').value))
+  $('tb-beats').addEventListener('change', () => savePref('tbBeats', $('tb-beats').value))
+  $('tb-height').addEventListener('change', () => savePref('tbHeight', $('tb-height').value))
+  $('tb-track').addEventListener('change', () => savePref('tbTrack', $('tb-track').value))
+  $('tb-input').addEventListener('change', () => savePref('tbInput', $('tb-input').value))
+  $('tb-read').addEventListener('click', () => readTbMarkers())
+  $('tb-render').addEventListener('click', () => renderTabAndPlace())
+}
+
 const HELPER_OFFLINE_MSG =
   'Ajudante de render não está rodando. Instale com npm run helper:install (uma vez por PC).'
 const HELPER_OUTDATED_MSG =
@@ -1776,6 +2101,7 @@ async function checkHelper() {
     dgStatus(msg)
     lyStatus(msg)
     rtStatus(msg)
+    tbStatus(msg)
   }
 }
 
@@ -1805,6 +2131,7 @@ function wireDiagrams() {
   $('tab-lyrics').addEventListener('click', () => switchTab('lyrics'))
   $('tab-rhythm').addEventListener('click', () => switchTab('rhythm'))
   $('tab-shorts').addEventListener('click', () => switchTab('shorts'))
+  // tab-tab é ligado em wireTab()
 
   $('dg-search').addEventListener('input', (e) => {
     clearTimeout(dg.searchTimer)
@@ -1846,6 +2173,7 @@ function wireUi() {
   wireDiagrams()
   wireLyrics()
   wireRhythm()
+  wireTab()
   $('btn-settings').addEventListener('click', () => showSettings(true))
   $('btn-back').addEventListener('click', () => showSettings(false))
   $('btn-save-settings').addEventListener('click', () => {

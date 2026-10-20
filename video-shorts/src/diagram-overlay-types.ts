@@ -54,3 +54,26 @@ export type RhythmOverlayProps = {
   width?: number
   height?: number
 }
+
+/** Coluna de tablatura: casa por corda (e→E), null = vazio, -1 = muda. */
+export type TabOverlayColumn = (number | null)[]
+
+export type TabOverlayMark = {
+  /** Segundos desde o início do overlay. */
+  t: number
+  /** Índice da coluna que acende (branco → roxo). */
+  col: number
+}
+
+export type TabOverlayProps = {
+  columns: TabOverlayColumn[]
+  /** Acorde acima de cada coluna (opcional). */
+  chords?: string[]
+  marks: TabOverlayMark[]
+  durationSec: number
+  fps: number
+  width?: number
+  height?: number
+  /** Centro vertical (fração). Padrão ~0.78. */
+  centerY?: number
+}

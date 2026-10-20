@@ -46,6 +46,7 @@
         <button type="button" id="tab-diagrams" class="tab active">Diagramas</button>
         <button type="button" id="tab-lyrics" class="tab">Letra</button>
         <button type="button" id="tab-rhythm" class="tab">Ritmo</button>
+        <button type="button" id="tab-tab" class="tab">Tablatura</button>
         <button type="button" id="tab-shorts" class="tab">Shorts</button>
       </nav>
 
@@ -258,6 +259,90 @@
 
         <button type="button" id="rt-render" class="btn primary" disabled>
           Gerar ritmo e colocar na agulha
+        </button>
+      </section>
+
+      <section id="view-tab" class="panel hidden">
+        <label class="field">
+          Tablatura (JSON do montador ou ASCII)
+          <textarea
+            id="tb-input"
+            rows="8"
+            placeholder='Cole o JSON do montador (/dicionario → Montador de tablaturas) ou uma tab ASCII:
+Em
+e|-------0--|
+B|-----0----|
+G|---0------|
+D|-2--------|
+A|----------|
+E|----------|'
+          ></textarea>
+        </label>
+        <div class="row tight">
+          <button type="button" id="tb-parse" class="btn">Carregar tab</button>
+          <span id="tb-info" class="status"></span>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Sync
+            <select id="tb-mode">
+              <option value="manual">Marcadores (1 por coluna)</option>
+              <option value="click">Click / BPM</option>
+            </select>
+          </label>
+          <label class="field grow">
+            Cor do marcador
+            <select id="tb-color">
+              <option value="0">Verde</option>
+              <option value="1">Vermelho</option>
+              <option value="2" selected>Roxo</option>
+              <option value="3">Laranja</option>
+              <option value="4">Amarelo</option>
+              <option value="5">Branco</option>
+              <option value="6">Azul</option>
+              <option value="7">Ciano</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="tb-click-opts" class="row hidden">
+          <label class="field grow">
+            BPM
+            <input id="tb-bpm" type="number" min="40" max="240" value="90" />
+          </label>
+          <label class="field grow">
+            Tempos por coluna
+            <input id="tb-beats" type="number" min="0.25" step="0.25" value="1" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            Altura no vídeo (%)
+            <input id="tb-height" type="number" min="5" max="95" value="78" />
+          </label>
+          <label class="field grow">
+            Trilha de vídeo
+            <input id="tb-track" type="number" min="1" max="20" value="5" />
+          </label>
+        </div>
+
+        <p id="tb-hint" class="hint">
+          No modo marcadores: toque e aperte M em cada coluna da tab (na ordem). As casas
+          passam de branco para roxo no tempo do marcador. No modo BPM: um marcador no 1º
+          tempo e o resto segue o BPM.
+        </p>
+
+        <div class="row tight">
+          <button type="button" id="tb-read" class="btn">Ler marcadores</button>
+          <span id="tb-status" class="status"></span>
+        </div>
+
+        <div id="tb-rows" class="list rows hidden"></div>
+
+        <button type="button" id="tb-render" class="btn primary" disabled>
+          Gerar tablatura e colocar na timeline
         </button>
       </section>
 

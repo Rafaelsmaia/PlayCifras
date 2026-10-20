@@ -3,10 +3,12 @@ import { Composition } from 'remotion'
 import { DIAGRAM_OVERLAY_DEMO, DiagramOverlayComposition } from './DiagramOverlay'
 import { LYRICS_OVERLAY_DEMO, LyricsOverlayComposition } from './LyricsOverlay'
 import { RHYTHM_OVERLAY_DEMO, RhythmOverlayComposition } from './RhythmOverlay'
+import { TAB_OVERLAY_DEMO, TabOverlayComposition } from './TabOverlay'
 import type {
   DiagramOverlayProps,
   LyricsOverlayProps,
   RhythmOverlayProps,
+  TabOverlayProps,
 } from './diagram-overlay-types'
 import { frameOf } from './overlay-layout'
 
@@ -56,6 +58,16 @@ export const DiagramOverlayEntry: React.FC = () => (
       calculateMetadata={({ props }: { props: RhythmOverlayProps }) =>
         metadataOf({ ...props, durationSec: 1 / 30, fps: 30 })
       }
+    />
+    <Composition
+      id="TabOverlay"
+      component={TabOverlayComposition}
+      durationInFrames={Math.round(TAB_OVERLAY_DEMO.durationSec * TAB_OVERLAY_DEMO.fps)}
+      fps={TAB_OVERLAY_DEMO.fps}
+      width={1080}
+      height={1920}
+      defaultProps={TAB_OVERLAY_DEMO}
+      calculateMetadata={({ props }: { props: TabOverlayProps }) => metadataOf(props)}
     />
   </>
 )

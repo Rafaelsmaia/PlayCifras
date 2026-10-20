@@ -85,6 +85,17 @@ Imagem estática transparente (PNG) com "Ritmo:" e as setas — para baixo em br
 
 Sem **Duração**, a imagem vai até o fim da sequência. Se o Premiere não aceitar a duração pela API, o painel avisa — é só arrastar a borda do clipe.
 
+## Aba Tablatura (casas branco → roxo)
+
+Overlay transparente (`.mov` ProRes 4444) no estilo Cifra Club: linhas tracejadas, badges das cordas e casas que passam de **branco para roxo** no tempo de cada coluna.
+
+1. No site (`/dicionario` → **Montador de tablaturas**), monte a tab e clique em **Copiar JSON (Premiere)** — ou cole uma tab ASCII (6 linhas `e|`…`E|`).
+2. No plugin → aba **Tablatura** → cole → **Carregar tab**.
+3. **Marcadores** (padrão): toque e aperte **M** em cada coluna com notas (use a cor escolhida; padrão roxo). **Click/BPM**: um marcador no 1º tempo + BPM + tempos por coluna.
+4. **Ler marcadores** → confira a lista → **Gerar tablatura e colocar na timeline** (padrão V5).
+
+Atualize o ajudante depois do `git pull`: `npm run helper:install` (versão ≥ 5).
+
 ## Fluxo diário (Shorts)
 
 1. Prepare e sincronize:

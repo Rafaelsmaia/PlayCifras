@@ -1,7 +1,7 @@
 /**
  * Ajudante de render PlayCifras: servidor local (porta 3917) que renderiza os overlays
- * do plugin do Premiere (Remotion → ProRes 4444 com alpha): troca animada de diagramas
- * e letra com cifras, mais o ritmo (setas) como PNG transparente.
+ * do plugin do Premiere (Remotion → ProRes 4444 com alpha): troca animada de diagramas,
+ * letra com cifras, tablatura (casas branco→roxo) e ritmo (setas) como PNG transparente.
  * Digitações vêm do site (/api/plugin/chord-shapes); nada de banco aqui.
  */
 import http from 'node:http'
@@ -13,9 +13,9 @@ import { fileURLToPath } from 'node:url'
 import { bundle } from '@remotion/bundler'
 import { ensureBrowser, renderMedia, renderStill, selectComposition } from '@remotion/renderer'
 
-const HELPER_VERSION = 4
+const HELPER_VERSION = 5
 /** Mude quando o visual da composição mudar (invalida o cache). */
-const RENDER_VERSION = 5
+const RENDER_VERSION = 6
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
 const DEFAULT_SITE = 'https://playcifras.vercel.app'
 /** Tempo antes do 1º marcador para o card entrar. */
@@ -191,6 +191,50 @@ async function renderRhythm(body) {
   })
 }
 
+/** Tablatura animada: casas passam de branco para roxo conforme os marks. */
+async function renderTab(body) {
+  const columns = (Array.isArray(body.columns) ? body.columns : [])
+    .map((col) =>
+      (Array.isArray(col) ? col : []).slice(0, 6).map((v) => {
+        if (v == null || v === '') return null
+        const n = Number(v)
+        return Number.isFinite(n) ? Math.trunc(n) : null
+      })
+    )
+    .filter((col) => col.length > 0)
+  if (!columns.length) throw new Error('Nenhuma coluna de tablatura')
+
+  const chords = Array.isArray(body.chords)
+    ? body.chords.map((c) => String(c || '').slice(0, 12))
+    : []
+
+  const marks = (Array.isArray(body.marks) ? body.marks : [])
+    .map((m) => ({ t: Number(m.t), col: Math.max(0, Math.floor(Number(m.col))) }))
+    .filter((m) => Number.isFinite(m.t) && m.col < columns.length)
+    .sort((a, b) => a.t - b.t)
+  if (!marks.length) throw new Error('Nenhum marcador de tempo para a tab')
+
+  const { fps, startSec, durationSec } = timing(body, marks)
+  const cy = Number(body.centerY)
+  const props = {
+    columns,
+    chords,
+    marks: marks.map((m) => ({ t: round3(m.t - startSec), col: m.col })),
+    durationSec,
+    fps,
+    centerY: Number.isFinite(cy) ? Math.min(0.95, Math.max(0.05, cy)) : undefined,
+    ...frameSize(body),
+  }
+  const result = await renderOverlay({
+    compositionId: 'TabOverlay',
+    props,
+    slug: `${safeSlug(body.slug)}-tab`,
+    force: body.force,
+    label: `${marks.length} notas`,
+  })
+  return { ...result, startSec, durationSec }
+}
+
 async function renderOverlay({ compositionId, props, slug, force, label, still = false }) {
   const hash = createHash('sha1')
     .update(JSON.stringify({ v: RENDER_VERSION, id: compositionId, props }))
@@ -300,6 +344,7 @@ const server = http.createServer(async (req, res) => {
     '/render-diagrams': renderDiagrams,
     '/render-lyrics': renderLyrics,
     '/render-rhythm': renderRhythm,
+    '/render-tab': renderTab,
   }
   if (req.method === 'POST' && routes[url.pathname]) {
     try {
