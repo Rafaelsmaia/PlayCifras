@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import ProfessionalChordDiagram from '@/components/ProfessionalChordDiagram'
 import ChordBuilder from '@/components/dicionario/ChordBuilder'
+import TabBuilder from '@/components/dicionario/TabBuilder'
 import type { ChordPopupDiagramData } from '@/lib/chord-diagram-types'
 import clsx from 'clsx'
 
@@ -39,7 +40,7 @@ type Props = {
   entries: DictionaryChordEntry[]
 }
 
-type Tab = 'biblioteca' | 'montador'
+type Tab = 'biblioteca' | 'montador' | 'tablatura'
 
 export default function ChordDictionaryClient({ entries }: Props) {
   const [tab, setTab] = useState<Tab>('biblioteca')
@@ -74,7 +75,8 @@ export default function ChordDictionaryClient({ entries }: Props) {
         {(
           [
             { id: 'biblioteca' as const, label: 'Biblioteca' },
-            { id: 'montador' as const, label: 'Montador' }
+            { id: 'montador' as const, label: 'Montador de acordes' },
+            { id: 'tablatura' as const, label: 'Montador de tablaturas' }
           ] as const
         ).map(({ id, label }) => (
           <button
@@ -97,6 +99,8 @@ export default function ChordDictionaryClient({ entries }: Props) {
 
       {tab === 'montador' ? (
         <ChordBuilder />
+      ) : tab === 'tablatura' ? (
+        <TabBuilder />
       ) : (
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <aside className="w-full shrink-0 rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:sticky lg:top-20 lg:w-[280px]">

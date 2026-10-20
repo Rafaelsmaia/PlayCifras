@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: 'Dicionário de Acordes | PlayCifras',
   description:
-    'Pesquise digitações de acordes de violão na biblioteca do PlayCifras.'
+    'Pesquise digitações de acordes, monte diagramas e tablaturas para vídeos na biblioteca do PlayCifras.'
 }
 
 function sortEntries(a: DictionaryChordEntry, b: DictionaryChordEntry) {
@@ -49,7 +49,7 @@ export default function DicionarioPage() {
       </h1>
       <p className="mb-8 max-w-2xl text-sm text-gray-600 sm:text-base">
         Busque digitações da biblioteca do PlayCifras — as mesmas usadas nas
-        cifras.
+        cifras — e monte acordes ou tablaturas em PNG para os vídeos.
       </p>
 
       <ChordDictionaryClient entries={entries} />
