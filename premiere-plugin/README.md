@@ -89,7 +89,7 @@ Sem **Duração**, a imagem vai até o fim da sequência. Se o Premiere não ace
 
 Overlay transparente (`.mov` ProRes 4444) no estilo Cifra Club: linhas tracejadas, badges das cordas e casas que passam de **branco para roxo** no tempo de cada coluna.
 
-1. No site (`/dicionario` → **Montador de tablaturas**), monte a tab e clique em **Copiar JSON (Premiere)** — ou cole uma tab ASCII (6 linhas `e|`…`E|`).
+1. No site (`/dicionario` → **Montador de tablaturas**), escolha **Violão** ou **Ukulele**, monte a tab e clique em **Copiar JSON (Premiere)** — ou cole ASCII (violão: 6 linhas `e|`…`E|`; ukulele: 4 linhas `A| E| C| G|`).
 2. No plugin → aba **Tablatura** → cole → **Carregar tab**.
 3. **Marcadores** (padrão): toque e aperte **M** em cada coluna com notas (use a cor escolhida; padrão roxo). **Click/BPM**: um marcador no 1º tempo + BPM + tempos por coluna.
 4. **Ler marcadores** → confira a lista → **Gerar tablatura e colocar na timeline** (padrão V5).

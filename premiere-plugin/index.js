@@ -1773,6 +1773,7 @@ function wireRhythm() {
 const tb = {
   columns: [],
   chords: [],
+  instrument: 'guitar',
   /** { t, col } */
   rows: [],
   endSec: null,
@@ -1803,15 +1804,28 @@ function soundingCols(columns) {
   return out
 }
 
+function tabInstrumentOf(data, columns) {
+  if (data && data.instrument === 'ukulele') return 'ukulele'
+  if (data && data.instrument === 'guitar') return 'guitar'
+  const n = columns && columns[0] ? columns[0].length : 0
+  return n === 4 ? 'ukulele' : 'guitar'
+}
+
+function emptyTabCol(n) {
+  return Array.from({ length: n }, () => null)
+}
+
 /** Parse JSON do montador ou tab ASCII simples. */
 function parseTabInput(raw) {
   const text = String(raw || '').trim()
   if (!text) throw new Error('Cole o JSON ou a tab ASCII')
   if (text.startsWith('{')) {
     const data = JSON.parse(text)
+    const instrument = tabInstrumentOf(data, data.columns)
+    const n = instrument === 'ukulele' ? 4 : 6
     const columns = (data.columns || []).map((col) => {
-      const next = [null, null, null, null, null, null]
-      for (let s = 0; s < 6; s++) {
+      const next = emptyTabCol(n)
+      for (let s = 0; s < n; s++) {
         const v = col[s]
         next[s] = v == null || v === '' ? null : Math.trunc(Number(v))
       }
@@ -1827,7 +1841,7 @@ function parseTabInput(raw) {
       packedChords.push(String(rawChords[i] || ''))
     })
     if (!packed.length) throw new Error('JSON sem casas')
-    return { columns: packed, chords: packedChords }
+    return { columns: packed, chords: packedChords, instrument }
   }
   return parseAsciiTabPlugin(text)
 }
@@ -1846,14 +1860,22 @@ function parseAsciiTabPlugin(text) {
     if (m) rows.push({ label: m[1], body: m[2].replace(/\|/g, '') })
     else other.push(line)
   }
-  if (rows.length < 6) throw new Error('Cole as 6 linhas e| B| G| D| A| E|')
 
-  const order = ['e', 'B', 'G', 'D', 'A', 'E']
+  const instrument = rows.length >= 6 ? 'guitar' : 'ukulele'
+  const order = instrument === 'ukulele' ? ['A', 'E', 'C', 'G'] : ['e', 'B', 'G', 'D', 'A', 'E']
+  if (rows.length < order.length) {
+    throw new Error(
+      instrument === 'ukulele'
+        ? 'Cole as 4 linhas A| E| C| G| (ukulele) ou 6 linhas de violão'
+        : 'Cole as 6 linhas e| B| G| D| A| E|'
+    )
+  }
+
   const taken = new Set()
   const bodies = []
   for (const want of order) {
     let idx = -1
-    if (want === 'e' || want === 'E') {
+    if (instrument === 'guitar' && (want === 'e' || want === 'E')) {
       idx = rows.findIndex((r, i) => !taken.has(i) && (r.label === 'e' || r.label === 'E'))
     } else {
       idx = rows.findIndex(
@@ -1865,6 +1887,7 @@ function parseAsciiTabPlugin(text) {
     bodies.push(rows[idx].body)
   }
 
+  const n = order.length
   const width = Math.max(...bodies.map((b) => b.length), 1)
   const skip = bodies.map(() => new Uint8Array(width))
   const columns = []
@@ -1881,9 +1904,9 @@ function parseAsciiTabPlugin(text) {
   }
 
   for (let x = 0; x < width; x++) {
-    const col = [null, null, null, null, null, null]
+    const col = emptyTabCol(n)
     let any = false
-    for (let s = 0; s < 6; s++) {
+    for (let s = 0; s < n; s++) {
       if (skip[s][x]) continue
       const ch = bodies[s][x] || '-'
       if ('- |/hp'.includes(ch) || ch === ' ') continue
@@ -1893,13 +1916,13 @@ function parseAsciiTabPlugin(text) {
         continue
       }
       if (ch >= '0' && ch <= '9') {
-        let n = Number(ch)
+        let num = Number(ch)
         const next = bodies[s][x + 1]
         if (next >= '0' && next <= '9') {
-          n = n * 10 + Number(next)
+          num = num * 10 + Number(next)
           skip[s][x + 1] = 1
         }
-        col[s] = n
+        col[s] = num
         any = true
       }
     }
@@ -1908,7 +1931,7 @@ function parseAsciiTabPlugin(text) {
     chords.push(chordAt[x] || '')
   }
   if (!columns.length) throw new Error('Nenhuma casa na tab')
-  return { columns, chords }
+  return { columns, chords, instrument }
 }
 
 function loadTabFromInput() {
@@ -1916,22 +1939,26 @@ function loadTabFromInput() {
     const parsed = parseTabInput($('tb-input').value)
     tb.columns = parsed.columns
     tb.chords = parsed.chords
+    tb.instrument = parsed.instrument || 'guitar'
     tb.rows = []
     const compact = JSON.stringify({
       version: 1,
+      instrument: tb.instrument,
       columns: tb.columns,
       ...(tb.chords.some(Boolean) ? { chords: tb.chords } : {}),
     })
     $('tb-input').value = compact
     savePref('tbInput', compact)
     const n = soundingCols(tb.columns).length
-    $('tb-info').textContent = `${n} colunas com notas — cole outra tab para trocar`
+    const inst = tb.instrument === 'ukulele' ? 'ukulele' : 'violão'
+    $('tb-info').textContent = `${inst} · ${n} colunas com notas — cole outra tab para trocar`
     tbStatus('Tab carregada. Leia os marcadores.')
     renderTbRows()
     validateTb()
   } catch (e) {
     tb.columns = []
     tb.chords = []
+    tb.instrument = 'guitar'
     tb.rows = []
     $('tb-info').textContent = ''
     tbStatus(`Falha: ${e.message || e}`)
@@ -2051,6 +2078,7 @@ async function renderTabAndPlace() {
       {
         columns: tb.columns,
         chords: tb.chords,
+        instrument: tb.instrument || 'guitar',
         marks: tb.rows.map((r) => ({ t: r.t, col: r.col })),
         endSec: tb.endSec,
         fps: DG_FPS,

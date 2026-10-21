@@ -16,12 +16,14 @@ import {
   getChordTitleFontFamily,
   type ChordTitleFontId
 } from '@/components/dicionario/chord-title-fonts'
-import TabPreviewSvg, {
-  TAB_STRING_COUNT,
-  TAB_STRING_LABELS,
-  type TabColumn
-} from '@/components/dicionario/TabPreviewSvg'
-import { parseAsciiTab, toTabDocument } from '@/lib/tab-format'
+import TabPreviewSvg, { type TabColumn } from '@/components/dicionario/TabPreviewSvg'
+import {
+  TAB_INSTRUMENTS,
+  parseAsciiTab,
+  tabStringLabels,
+  toTabDocument,
+  type TabInstrument
+} from '@/lib/tab-format'
 import { downloadSvgAsPng } from '@/lib/download-svg-png'
 import clsx from 'clsx'
 
@@ -41,12 +43,12 @@ type Props = {
   className?: string
 }
 
-function emptyColumn(): TabColumn {
-  return Array.from({ length: TAB_STRING_COUNT }, () => null)
+function emptyColumn(instrument: TabInstrument): TabColumn {
+  return Array.from({ length: tabStringLabels(instrument).length }, () => null)
 }
 
-function emptyColumns(n: number): TabColumn[] {
-  return Array.from({ length: n }, () => emptyColumn())
+function emptyColumns(n: number, instrument: TabInstrument): TabColumn[] {
+  return Array.from({ length: n }, () => emptyColumn(instrument))
 }
 
 function cloneColumns(cols: TabColumn[]): TabColumn[] {
@@ -64,8 +66,9 @@ export default function TabBuilder({ className }: Props) {
   const [titleFont, setTitleFont] = useState<ChordTitleFontId>(
     DEFAULT_CHORD_TITLE_FONT
   )
+  const [instrument, setInstrument] = useState<TabInstrument>('guitar')
   const [columns, setColumns] = useState<TabColumn[]>(() =>
-    emptyColumns(COLS_DEFAULT)
+    emptyColumns(COLS_DEFAULT, 'guitar')
   )
   const [chords, setChords] = useState<string[]>(() =>
     Array.from({ length: COLS_DEFAULT }, () => '')
@@ -78,10 +81,19 @@ export default function TabBuilder({ className }: Props) {
   const [copyMsg, setCopyMsg] = useState('')
   const [previewPlayed, setPreviewPlayed] = useState(0)
 
+  const stringLabels = tabStringLabels(instrument)
   const hasNotes = useMemo(
     () => columns.some((col) => col.some((n) => n != null)),
     [columns]
   )
+
+  function switchInstrument(next: TabInstrument) {
+    if (next === instrument) return
+    setInstrument(next)
+    setColumns(emptyColumns(COLS_DEFAULT, next))
+    setChords(Array.from({ length: COLS_DEFAULT }, () => ''))
+    setSelectedCol(0)
+  }
 
   const columnProgress = useMemo(() => {
     const n = columns.length
@@ -114,7 +126,7 @@ export default function TabBuilder({ className }: Props) {
     setColumns((prev) => {
       const next = cloneColumns(prev)
       const at = Math.min(selectedCol + 1, next.length)
-      next.splice(at, 0, ...Array.from({ length: n }, () => emptyColumn()))
+      next.splice(at, 0, ...Array.from({ length: n }, () => emptyColumn(instrument)))
       setChords((ch) => {
         const c = [...ch]
         c.splice(at, 0, ...Array.from({ length: n }, () => ''))
@@ -142,12 +154,12 @@ export default function TabBuilder({ className }: Props) {
   }
 
   function clearAll() {
-    setColumns(emptyColumns(columns.length))
+    setColumns(emptyColumns(columns.length, instrument))
     setChords(Array.from({ length: columns.length }, () => ''))
   }
 
   function resetColumns() {
-    setColumns(emptyColumns(COLS_DEFAULT))
+    setColumns(emptyColumns(COLS_DEFAULT, instrument))
     setChords(Array.from({ length: COLS_DEFAULT }, () => ''))
     setSelectedCol(0)
   }
@@ -155,7 +167,7 @@ export default function TabBuilder({ className }: Props) {
   function clearColumn(colIndex: number) {
     setColumns((prev) => {
       const next = cloneColumns(prev)
-      next[colIndex] = emptyColumn()
+      next[colIndex] = emptyColumn(instrument)
       return next
     })
     setChords((ch) => {
@@ -168,6 +180,7 @@ export default function TabBuilder({ className }: Props) {
   function applyAscii() {
     try {
       const doc = parseAsciiTab(asciiPaste)
+      setInstrument(doc.instrument || instrument)
       setColumns(doc.columns)
       setChords(syncChords(doc.columns, doc.chords || []))
       if (doc.title) setTitle(doc.title)
@@ -179,7 +192,7 @@ export default function TabBuilder({ className }: Props) {
   }
 
   async function copyJson() {
-    const doc = toTabDocument({ title, columns, chords })
+    const doc = toTabDocument({ title, columns, chords, instrument })
     const text = JSON.stringify(doc)
     try {
       await navigator.clipboard.writeText(text)
@@ -195,7 +208,8 @@ export default function TabBuilder({ className }: Props) {
     setDownloading(true)
     try {
       const safe = (title.trim() || 'tablatura').replace(/[^\w\-.#]+/g, '_')
-      await downloadSvgAsPng(svg, `playcifras-tab-${safe}.png`)
+      const prefix = instrument === 'ukulele' ? 'ukulele' : 'violao'
+      await downloadSvgAsPng(svg, `playcifras-tab-${prefix}-${safe}.png`)
     } catch (e) {
       console.error(e)
       alert('Não foi possível baixar o PNG.')
@@ -220,12 +234,32 @@ export default function TabBuilder({ className }: Props) {
           Montador de tablaturas
         </h2>
         <p className="mt-1 text-sm text-gray-500">
-          Visual no estilo Cifra Club. Monte a tab, copie o JSON e gere o overlay
-          animado (casas branco → roxo) no plugin do Premiere.
+          Visual no estilo Cifra Club. Monte a tab de violão ou ukulele, copie o
+          JSON e gere o overlay animado (casas branco → roxo) no plugin do Premiere.
         </p>
       </div>
 
       <div className="mb-5 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+          Instrumento
+          <div className="flex gap-1" role="group" aria-label="Instrumento">
+            {(Object.keys(TAB_INSTRUMENTS) as TabInstrument[]).map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => switchInstrument(id)}
+                className={clsx(
+                  'rounded-md px-3 py-2 text-xs font-bold',
+                  instrument === id
+                    ? 'bg-cifra-green text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                )}
+              >
+                {TAB_INSTRUMENTS[id].label}
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-gray-600">
           Título (opcional)
           <input
@@ -375,7 +409,9 @@ export default function TabBuilder({ className }: Props) {
         <div className="min-w-0 w-full max-w-3xl">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Editor · Violão (6 cordas)
+              Editor · {TAB_INSTRUMENTS[instrument].label} (
+              {stringLabels.length} cordas
+              {instrument === 'ukulele' ? ' · GCEA' : ''})
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -476,7 +512,7 @@ export default function TabBuilder({ className }: Props) {
                 </button>
               ))}
 
-              {TAB_STRING_LABELS.map((label, s) => (
+              {stringLabels.map((label, s) => (
                 <div key={`row-${s}`} className="contents">
                   <span className="flex items-center justify-end pr-2 text-[11px] font-bold text-gray-500">
                     {label}
@@ -516,7 +552,11 @@ export default function TabBuilder({ className }: Props) {
               value={asciiPaste}
               onChange={(e) => setAsciiPaste(e.target.value)}
               rows={5}
-              placeholder={`Em          D\ne|-------0-----2--|\nB|-----0-----3----|\nG|---0-----2------|\nD|-2--------------|\nA|----------------|\nE|----------------|`}
+              placeholder={
+                instrument === 'ukulele'
+                  ? `C\nA|-------3--|\nE|-----0----|\nC|---0------|\nG|-0--------|`
+                  : `Em          D\ne|-------0-----2--|\nB|-----0-----3----|\nG|---0-----2------|\nD|-2--------------|\nA|----------------|\nE|----------------|`
+              }
               className="rounded-lg border border-gray-200 px-3 py-2 font-mono text-xs text-gray-900 focus:border-cifra-green focus:outline-none focus:ring-2 focus:ring-cifra-green/20"
             />
           </label>
@@ -539,6 +579,7 @@ export default function TabBuilder({ className }: Props) {
               <TabPreviewSvg
                 ref={svgRef}
                 title={title}
+                instrument={instrument}
                 columns={columns}
                 chords={chords}
                 barEvery={barEvery}

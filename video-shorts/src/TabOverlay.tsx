@@ -6,8 +6,7 @@ import {
   lerpTabNoteColor,
   TAB_BADGE_FILL,
   TAB_LINE,
-  TAB_STRING_COUNT,
-  TAB_STRING_LABELS,
+  tabStringLabels,
   type TabColumn,
 } from './tab-shared'
 
@@ -69,6 +68,12 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
   const chords = props.chords || []
   const marks = props.marks?.length ? props.marks : TAB_OVERLAY_DEMO.marks
   const centerY = props.centerY ?? LAYOUT.tabCenterY
+  const labels = tabStringLabels(
+    props.instrument === 'ukulele' || columns[0]?.length === 4
+      ? 'ukulele'
+      : 'guitar'
+  )
+  const stringCount = labels.length
 
   const colCount = Math.max(columns.length, 1)
   const badgeR = 14 * u
@@ -78,7 +83,7 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
   const stringGap = 34 * u
   const colGap = 34 * u
   const topY = chordH + 8 * u
-  const gridH = (TAB_STRING_COUNT - 1) * stringGap
+  const gridH = (stringCount - 1) * stringGap
   const staffW = padLeft + colCount * colGap + padRight
   const staffH = topY + gridH + 20 * u
   const noteFont = 20 * u
@@ -107,7 +112,7 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
           viewBox={`0 0 ${staffW} ${staffH}`}
           style={{ overflow: 'visible', filter: `drop-shadow(${shadow})` }}
         >
-          {TAB_STRING_LABELS.map((label, s) => {
+          {labels.map((label, s) => {
             const y = topY + s * stringGap
             return (
               <g key={`str-${s}`}>
@@ -157,7 +162,7 @@ export const TabOverlayComposition: React.FC<TabOverlayProps> = (props) => {
                     {chord}
                   </text>
                 ) : null}
-                {TAB_STRING_LABELS.map((_, s) => {
+                {labels.map((_, s) => {
                   const label = noteLabel(col[s] ?? null)
                   if (!label) return null
                   const y = topY + s * stringGap

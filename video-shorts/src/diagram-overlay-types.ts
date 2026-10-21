@@ -55,7 +55,7 @@ export type RhythmOverlayProps = {
   height?: number
 }
 
-/** Coluna de tablatura: casa por corda (e→E), null = vazio, -1 = muda. */
+/** Coluna de tablatura: casa por corda (aguda→grave), null = vazio, -1 = muda. */
 export type TabOverlayColumn = (number | null)[]
 
 export type TabOverlayMark = {
@@ -67,6 +67,8 @@ export type TabOverlayMark = {
 
 export type TabOverlayProps = {
   columns: TabOverlayColumn[]
+  /** Violão (6) ou ukulele (4). */
+  instrument?: 'guitar' | 'ukulele'
   /** Acorde acima de cada coluna (opcional). */
   chords?: string[]
   marks: TabOverlayMark[]

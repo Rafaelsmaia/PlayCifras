@@ -1,13 +1,46 @@
 /** Formato compartilhado: montador web ↔ plugin Premiere ↔ Remotion. */
 
-export const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'] as const
-export const TAB_STRING_COUNT = TAB_STRING_LABELS.length
+export type TabInstrument = 'guitar' | 'ukulele'
 
-/** Por corda (e → E): casa, -1 = muda, null = vazio. */
+export const TAB_INSTRUMENTS: Record<
+  TabInstrument,
+  { label: string; labels: readonly string[] }
+> = {
+  guitar: { label: 'Violão', labels: ['e', 'B', 'G', 'D', 'A', 'E'] },
+  ukulele: { label: 'Ukulele', labels: ['A', 'E', 'C', 'G'] },
+}
+
+/** Cordas no formato padrão de tablatura (aguda → grave). Violão. */
+export const TAB_STRING_LABELS = TAB_INSTRUMENTS.guitar.labels
+export const TAB_STRING_COUNT = TAB_STRING_LABELS.length
+export const UKE_STRING_LABELS = TAB_INSTRUMENTS.ukulele.labels
+
+export function tabStringLabels(
+  instrument: TabInstrument = 'guitar'
+): readonly string[] {
+  return TAB_INSTRUMENTS[instrument]?.labels ?? TAB_INSTRUMENTS.guitar.labels
+}
+
+export function tabStringCount(instrument: TabInstrument = 'guitar'): number {
+  return tabStringLabels(instrument).length
+}
+
+export function resolveTabInstrument(
+  instrument?: string | null,
+  columns?: TabColumn[]
+): TabInstrument {
+  if (instrument === 'ukulele') return 'ukulele'
+  if (instrument === 'guitar') return 'guitar'
+  const n = columns?.[0]?.length
+  return n === 4 ? 'ukulele' : 'guitar'
+}
+
+/** Por corda (aguda → grave): casa, -1 = muda, null = vazio. */
 export type TabColumn = (number | null)[]
 
 export type TabDocument = {
   version: 1
+  instrument?: TabInstrument
   title?: string
   /** Nome do acorde acima de cada coluna (ou '' ). */
   chords?: string[]
@@ -27,8 +60,8 @@ export const TAB_NOTE_PLAYED = '#f33aff'
 export const TAB_BADGE_FILL = '#f33aff'
 export const TAB_LINE = 'rgba(255,255,255,0.85)'
 
-export function emptyColumn(): TabColumn {
-  return Array.from({ length: TAB_STRING_COUNT }, () => null)
+export function emptyColumn(instrument: TabInstrument = 'guitar'): TabColumn {
+  return Array.from({ length: tabStringCount(instrument) }, () => null)
 }
 
 export function columnHasNotes(col: TabColumn): boolean {
@@ -47,13 +80,16 @@ export function toTabDocument(input: {
   title?: string
   columns: TabColumn[]
   chords?: string[]
+  instrument?: TabInstrument
 }): TabDocument {
+  const instrument = resolveTabInstrument(input.instrument, input.columns)
+  const n = tabStringCount(instrument)
   const columns: TabColumn[] = []
   const chords: string[] = []
   input.columns.forEach((col, i) => {
-    const next = emptyColumn()
+    const next = emptyColumn(instrument)
     let any = false
-    for (let s = 0; s < TAB_STRING_COUNT; s++) {
+    for (let s = 0; s < n; s++) {
       const v = col[s]
       if (v == null || !Number.isFinite(Number(v))) continue
       next[s] = Math.trunc(Number(v))
@@ -63,7 +99,7 @@ export function toTabDocument(input: {
     columns.push(next)
     chords.push(String(input.chords?.[i] || '').trim())
   })
-  const doc: TabDocument = { version: 1, columns }
+  const doc: TabDocument = { version: 1, instrument, columns }
   const title = (input.title || '').trim()
   if (title) doc.title = title
   if (chords.some(Boolean)) doc.chords = chords
@@ -79,14 +115,18 @@ export function parseTabJson(raw: string): TabDocument {
     title: data.title,
     columns: data.columns as TabColumn[],
     chords: data.chords,
+    instrument: resolveTabInstrument(data.instrument, data.columns as TabColumn[]),
   })
 }
 
 /**
  * Parseia tablatura ASCII (estilo Cifra Club).
- * Aceita linha opcional de acordes acima e 6 linhas e| B| G| D| A| E|.
+ * Violão: 6 linhas e| B| G| D| A| E|. Ukulele: 4 linhas A| E| C| G|.
  */
-export function parseAsciiTab(text: string): TabDocument {
+export function parseAsciiTab(
+  text: string,
+  hinted?: TabInstrument
+): TabDocument {
   const lines = text
     .replace(/\r\n/g, '\n')
     .split('\n')
@@ -94,29 +134,56 @@ export function parseAsciiTab(text: string): TabDocument {
     .filter((l) => l.trim().length > 0)
 
   const stringRe = /^([eEbBgGdDaA])\s*[|:]\s*(.+)$/
-  type Row = { label: string; body: string; order: number }
+  type Row = { label: string; body: string }
   const rows: Row[] = []
   const other: string[] = []
 
-  lines.forEach((line, order) => {
+  lines.forEach((line) => {
     const m = stringRe.exec(line.trim())
-    if (m) rows.push({ label: m[1], body: m[2].replace(/\|/g, ''), order })
+    if (m) rows.push({ label: m[1], body: m[2].replace(/\|/g, '') })
     else other.push(line)
   })
 
-  if (rows.length < 6) {
-    throw new Error('Cole as 6 linhas de tab (e| B| G| D| A| E|)')
+  const instrument = detectAsciiInstrument(rows, hinted)
+  const labels = tabStringLabels(instrument)
+  if (rows.length < labels.length) {
+    throw new Error(
+      instrument === 'ukulele'
+        ? 'Cole as 4 linhas de tab (A| E| C| G|)'
+        : 'Cole as 6 linhas de tab (e| B| G| D| A| E|)'
+    )
   }
 
-  // Duas cordas "E": a primeira no arquivo é a aguda (e), a última a grave (E).
-  const bodies: string[] = []
+  const bodies = pickStringBodies(rows, labels, instrument)
+  const width = Math.max(...bodies.map((b) => b.length), 1)
+  const chordLine = other.length ? other[other.length - 1] : ''
+  const chordTokens = extractChordRow(chordLine, width)
+  const parsed = parseAsciiBodies(bodies, chordTokens, instrument)
+  if (!parsed.columns.length) throw new Error('Nenhuma casa encontrada na tab')
+  return toTabDocument({ ...parsed, instrument })
+}
+
+function detectAsciiInstrument(
+  rows: { label: string }[],
+  hinted?: TabInstrument
+): TabInstrument {
+  if (hinted) return hinted
+  if (rows.length >= 6) return 'guitar'
+  if (rows.length >= 4) return 'ukulele'
+  return 'guitar'
+}
+
+function pickStringBodies(
+  rows: { label: string; body: string }[],
+  labels: readonly string[],
+  instrument: TabInstrument
+): string[] {
   const taken = new Set<number>()
-  for (const want of TAB_STRING_LABELS) {
+  const bodies: string[] = []
+  for (const want of labels) {
     let idx = -1
-    if (want === 'e') {
+    if (instrument === 'guitar' && (want === 'e' || want === 'E')) {
       idx = rows.findIndex((r, i) => !taken.has(i) && (r.label === 'e' || r.label === 'E'))
-    } else if (want === 'E') {
-      idx = rows.findIndex((r, i) => !taken.has(i) && (r.label === 'E' || r.label === 'e'))
     } else {
       idx = rows.findIndex(
         (r, i) => !taken.has(i) && r.label.toLowerCase() === want.toLowerCase()
@@ -126,13 +193,7 @@ export function parseAsciiTab(text: string): TabDocument {
     taken.add(idx)
     bodies.push(rows[idx].body)
   }
-
-  const width = Math.max(...bodies.map((b) => b.length), 1)
-  const chordLine = other.length ? other[other.length - 1] : ''
-  const chordTokens = extractChordRow(chordLine, width)
-  const parsed = parseAsciiBodies(bodies, chordTokens)
-  if (!parsed.columns.length) throw new Error('Nenhuma casa encontrada na tab')
-  return toTabDocument(parsed)
+  return bodies
 }
 
 function extractChordRow(line: string, width: number): string[] {
@@ -150,17 +211,19 @@ function extractChordRow(line: string, width: number): string[] {
 
 function parseAsciiBodies(
   bodies: string[],
-  chordTokens: string[]
+  chordTokens: string[],
+  instrument: TabInstrument
 ): { columns: TabColumn[]; chords: string[] } {
+  const n = bodies.length
   const width = Math.max(...bodies.map((b) => b.length), 1)
   const skip = bodies.map(() => new Uint8Array(width))
   const columns: TabColumn[] = []
   const chords: string[] = []
 
   for (let x = 0; x < width; x++) {
-    const col = emptyColumn()
+    const col = emptyColumn(instrument)
     let any = false
-    for (let s = 0; s < TAB_STRING_COUNT; s++) {
+    for (let s = 0; s < n; s++) {
       if (skip[s][x]) continue
       const ch = bodies[s][x] || '-'
       if (ch === '-' || ch === ' ' || ch === '|' || ch === '/' || ch === 'h' || ch === 'p') {
@@ -172,13 +235,13 @@ function parseAsciiBodies(
         continue
       }
       if (ch >= '0' && ch <= '9') {
-        let n = Number(ch)
+        let num = Number(ch)
         const next = bodies[s][x + 1]
         if (next >= '0' && next <= '9') {
-          n = n * 10 + Number(next)
+          num = num * 10 + Number(next)
           skip[s][x + 1] = 1
         }
-        col[s] = n
+        col[s] = num
         any = true
       }
     }

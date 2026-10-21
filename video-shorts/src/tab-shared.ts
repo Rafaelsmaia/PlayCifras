@@ -1,7 +1,16 @@
 /** Constantes de tablatura usadas pelo overlay Remotion. */
 
+export type TabInstrument = 'guitar' | 'ukulele'
+
 export const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'] as const
+export const UKE_STRING_LABELS = ['A', 'E', 'C', 'G'] as const
 export const TAB_STRING_COUNT = TAB_STRING_LABELS.length
+
+export function tabStringLabels(
+  instrument: TabInstrument = 'guitar'
+): readonly string[] {
+  return instrument === 'ukulele' ? UKE_STRING_LABELS : TAB_STRING_LABELS
+}
 
 export type TabColumn = (number | null)[]
 

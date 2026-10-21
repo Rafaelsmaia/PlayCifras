@@ -8,14 +8,18 @@ import {
   TAB_NOTE_PLAYED,
   TAB_STRING_COUNT,
   TAB_STRING_LABELS,
+  resolveTabInstrument,
+  tabStringLabels,
   type TabColumn,
+  type TabInstrument,
 } from '@/lib/tab-format'
 
 export { TAB_STRING_LABELS, TAB_STRING_COUNT }
-export type { TabColumn }
+export type { TabColumn, TabInstrument }
 
 export type TabPreviewSvgProps = {
   title?: string
+  instrument?: TabInstrument
   columns: TabColumn[]
   /** Acorde acima de cada coluna. */
   chords?: string[]
@@ -61,6 +65,7 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
   function TabPreviewSvg(
     {
       title = '',
+      instrument,
       columns,
       chords,
       barEvery = 0,
@@ -73,6 +78,8 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
     },
     ref
   ) {
+    const labels = tabStringLabels(resolveTabInstrument(instrument, columns))
+    const stringCount = labels.length
     const colCount = Math.max(columns.length, 1)
     const badgeR = 11
     const padLeft = badgeR * 2 + 18
@@ -82,7 +89,7 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
     const stringGap = 26
     const colGap = 26
     const topY = titleH + chordH + 6
-    const gridH = (TAB_STRING_COUNT - 1) * stringGap
+    const gridH = (stringCount - 1) * stringGap
     const width = padLeft + colCount * colGap + padRight
     const height = topY + gridH + 16
     const lineStart = padLeft
@@ -118,7 +125,7 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
           </text>
         ) : null}
 
-        {TAB_STRING_LABELS.map((label, s) => {
+        {labels.map((label, s) => {
           const y = topY + s * stringGap
           return (
             <g key={`str-${s}`}>
@@ -187,7 +194,7 @@ const TabPreviewSvg = forwardRef<SVGSVGElement, TabPreviewSvgProps>(
                   {chord}
                 </text>
               ) : null}
-              {TAB_STRING_LABELS.map((_, s) => {
+              {labels.map((_, s) => {
                 const label = noteLabel(col[s] ?? null)
                 if (!label) return null
                 const y = topY + s * stringGap

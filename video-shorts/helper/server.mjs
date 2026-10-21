@@ -15,7 +15,7 @@ import { ensureBrowser, renderMedia, renderStill, selectComposition } from '@rem
 
 const HELPER_VERSION = 5
 /** Mude quando o visual da composição mudar (invalida o cache). */
-const RENDER_VERSION = 8
+const RENDER_VERSION = 9
 const PORT = Number(process.env.PLAYCIFRAS_HELPER_PORT || 3917)
 const DEFAULT_SITE = 'https://playcifras.vercel.app'
 /** Tempo antes do 1º marcador para o card entrar. */
@@ -193,15 +193,24 @@ async function renderRhythm(body) {
 
 /** Tablatura animada: casas passam de branco para roxo conforme os marks. */
 async function renderTab(body) {
+  const inferredUke =
+    Array.isArray(body.columns?.[0]) && body.columns[0].length === 4
+  const instrument =
+    body.instrument === 'ukulele' || (body.instrument !== 'guitar' && inferredUke)
+      ? 'ukulele'
+      : 'guitar'
+  const stringCount = instrument === 'ukulele' ? 4 : 6
   const columns = (Array.isArray(body.columns) ? body.columns : [])
-    .map((col) =>
-      (Array.isArray(col) ? col : []).slice(0, 6).map((v) => {
+    .map((col) => {
+      const src = Array.isArray(col) ? col : []
+      return Array.from({ length: stringCount }, (_, s) => {
+        const v = src[s]
         if (v == null || v === '') return null
         const n = Number(v)
         return Number.isFinite(n) ? Math.trunc(n) : null
       })
-    )
-    .filter((col) => col.length > 0)
+    })
+    .filter((col) => col.some((v) => v != null))
   if (!columns.length) throw new Error('Nenhuma coluna de tablatura')
 
   const chords = Array.isArray(body.chords)
@@ -223,6 +232,7 @@ async function renderTab(body) {
   const width = even(Math.min(16384, Math.max(frame.width, staffW)))
   const props = {
     columns,
+    instrument,
     chords,
     marks: marks.map((m) => ({ t: round3(m.t - startSec), col: m.col })),
     durationSec,
